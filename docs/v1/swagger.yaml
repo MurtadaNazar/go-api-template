@@ -1,0 +1,609 @@
+basePath: /api/v1
+definitions:
+  dto.UserCreateRequest:
+    properties:
+      email:
+        description: |-
+          Email of the user
+          Required: true
+          Example: john.doe@example.com
+        type: string
+      first_name:
+        description: |-
+          FirstName of the user
+          Required: true
+          Example: John
+        maxLength: 100
+        minLength: 2
+        type: string
+      last_name:
+        description: |-
+          LastName of the user
+          Required: true
+          Example: Doe
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        description: |-
+          Password for the user account
+          Required: true
+          Example: StrongP@ssw0rd
+        minLength: 8
+        type: string
+      second_name:
+        description: |-
+          SecondName of the user
+          Example: Michael
+        maxLength: 100
+        minLength: 2
+        type: string
+      user_type:
+        description: |-
+          UserType defines the role of the user
+          Enum: user, admin
+          Example: user
+        enum:
+        - user
+        - admin
+        type: string
+      username:
+        description: |-
+          Username of the user
+          Required: true
+          Example: johndoe123
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - username
+    type: object
+  dto.UserUpdateRequest:
+    properties:
+      email:
+        description: |-
+          Email of the user
+          Example: john.doe@example.com
+        type: string
+      first_name:
+        description: |-
+          FirstName of the user
+          Example: John
+        maxLength: 100
+        minLength: 2
+        type: string
+      last_name:
+        description: |-
+          LastName of the user
+          Example: Doe
+        maxLength: 100
+        minLength: 2
+        type: string
+      password:
+        description: |-
+          Password for the user account
+          Example: StrongP@ssw0rd
+        minLength: 8
+        type: string
+      second_name:
+        description: |-
+          SecondName of the user
+          Example: Michael
+        maxLength: 100
+        minLength: 2
+        type: string
+      user_type:
+        description: |-
+          UserType defines the role of the user
+          Enum: user, admin
+          Example: user
+        enum:
+        - user
+        - admin
+        type: string
+      username:
+        description: |-
+          Username of the user
+          Example: johndoe123
+        maxLength: 50
+        minLength: 3
+        type: string
+    type: object
+  model.LoginRequest:
+    properties:
+      email_or_username:
+        description: |-
+          User email or username for login
+          required: true
+          example: john.doe@example.com OR johndoe123
+          min length: 3
+          max length: 100
+        type: string
+      password:
+        description: |-
+          User password for authentication
+          required: true
+          example: mySecurePassword123!
+          min length: 8
+          format: password
+          writeOnly: true
+        type: string
+    required:
+    - email_or_username
+    - password
+    type: object
+  model.LoginResponse:
+    properties:
+      access_token:
+        description: |-
+          Access JWT token for API authorization
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        type: string
+      refresh_token:
+        description: |-
+          Refresh JWT token for obtaining new access tokens
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        type: string
+    type: object
+  model.RefreshRequest:
+    properties:
+      refresh_token:
+        description: |-
+          Refresh token obtained during login
+          required: true
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        type: string
+    required:
+    - refresh_token
+    type: object
+  model.RefreshResponse:
+    properties:
+      access_token:
+        description: |-
+          New access token for continued API access
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        type: string
+      refresh_token:
+        description: |-
+          New refresh token for future token rotations
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      details:
+        type: string
+      error:
+        type: string
+      request_id:
+        type: string
+      timestamp:
+        type: string
+      type:
+        type: string
+    type: object
+  response.SuccessResponse:
+    properties:
+      data: {}
+      request_id:
+        type: string
+      timestamp:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: Go Platform Template - Base platform with Auth, User, File, and RBAC
+    features
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Go Platform Template API
+  version: "1.0"
+paths:
+  /files:
+    get:
+      description: Get all files uploaded by the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user's files
+      tags:
+      - files
+  /files/{filename}:
+    delete:
+      description: Delete a file and its metadata
+      parameters:
+      - description: File path/name
+        in: path
+        name: filename
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      summary: Delete a file
+      tags:
+      - files
+    get:
+      description: Get a temporary signed URL to access a file
+      parameters:
+      - description: File path/name
+        in: path
+        name: filename
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      summary: Get file by filename
+      tags:
+      - files
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with email and password, returns access and
+        refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.LoginResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: User login
+      tags:
+      - Auth
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: Revokes a refresh token (blacklist) to log out the user
+      parameters:
+      - description: Refresh token to revoke
+        in: body
+        name: logout
+        required: true
+        schema:
+          $ref: '#/definitions/model.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out successfully
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Auth
+  /me:
+    get:
+      description: Returns user ID and role from access token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current logged-in user info
+      tags:
+      - Auth
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: Rotates refresh token and returns new access & refresh tokens
+      parameters:
+      - description: Refresh token
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/model.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.RefreshResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Refresh tokens
+      tags:
+      - Auth
+  /users:
+    get:
+      parameters:
+      - description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Limit for pagination
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by username
+        in: query
+        name: username
+        type: string
+      - description: Filter by email
+        in: query
+        name: email
+        type: string
+      - description: Filter by user type
+        in: query
+        name: user_type
+        type: string
+      - description: Sort by field (created_at or username)
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc or desc)
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List users with pagination, filters, and sorting
+      tags:
+      - Users
+  /users/:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: User to create
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Register a new user
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a user
+      tags:
+      - Users
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated user data
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an existing user
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

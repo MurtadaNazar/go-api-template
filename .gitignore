@@ -1,0 +1,97 @@
+# Binaries and compiled files
+/go-platform-template
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+*.html
+coverage/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+*.env
+!.env.example
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# Log files
+*.log
+logs/*
+!logs/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Build output
+dist/
+build/
+
+# Swagger generated files
+docs/swagger.json
+docs/swagger.yaml
+!docs/swagger-template.yaml
+
+# Docker volumes
+docker_data/
+*.volume/
+
+# MinIO data
+minio_data/
+
+# Debug files
+debug
+__debug_*
+
+# Certificate files
+*.pem
+*.key
+*.crt
+*.csr
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*-backup
+
+# Air live reload
+tmp/
+.air.toml
+
+# Test cache
+.testCoverage.txt
+.test_cache/

@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Pre-commit hook for Go project
+# Runs formatting, linting, and basic tests before allowing commit
+
+echo "Running pre-commit checks..."
+
+# Check for unstaged changes
+if git diff --name-only | grep -q "^"; then
+    echo "Error: You have unstaged changes."
+    echo "Please stage or stash them before committing."
+    exit 1
+fi
+
+# Format Go files
+echo "Formatting Go files..."
+if ! go fmt ./... >/dev/null 2>&1; then
+    echo "Error: go fmt failed. Please format your code."
+    exit 1
+fi
+
+# Run golangci-lint
+echo "Running linter..."
+if ! golangci-lint run --fix >/dev/null 2>&1; then
+    echo "Error: golangci-lint failed. Please fix the issues."
+    exit 1
+fi
+
+# Run unit tests (quick tests only)
+echo "Running quick tests..."
+if ! go test -short ./... >/dev/null 2>&1; then
+    echo "Error: Tests failed. Please fix the failing tests."
+    exit 1
+fi
+
+# Check for sensitive data
+echo "Checking for sensitive data..."
+if git diff --cached | grep -E "(API_KEY|SECRET|PASSWORD|PRIVATE_KEY)" >/dev/null 2>&1; then
+    echo "Error: Possible sensitive data detected in commit."
+    echo "Please remove sensitive data before committing."
+    exit 1
+fi
+
+echo "All pre-commit checks passed! ✨"
+exit 0

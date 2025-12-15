@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Post-merge hook
+# Runs after a successful merge to ensure environment is up to date
+
+echo "Running post-merge tasks..."
+
+# Check if dependencies were modified
+if git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD | grep -q "^go.mod\|^go.sum"; then
+    echo "Dependencies changed. Updating modules..."
+    go mod download
+    go mod tidy
+fi
+
+# Check if Dockerfile was modified
+if git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD | grep -q "^Dockerfile"; then
+    echo "Dockerfile changed. Consider rebuilding your containers."
+fi
+
+# Check if database migrations were added
+if git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD | grep -q "^internal/platform/database/migrations/"; then
+    echo "⚠️ New database migrations detected. Remember to run migrations!"
+fi
+
+echo "Post-merge tasks completed! 📦"
+exit 0

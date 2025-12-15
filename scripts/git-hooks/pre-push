@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Pre-push hook
+# Runs full test suite and security checks before pushing
+
+echo "Running pre-push checks..."
+
+# Run full test suite
+echo "Running full test suite..."
+if ! go test -v -race ./...; then
+    echo "Error: Tests failed. Please fix the failing tests before pushing."
+    exit 1
+fi
+
+# Run security checks
+echo "Running security checks..."
+if ! gosec -exclude-generated ./...; then
+    echo "Error: Security checks failed. Please fix security issues before pushing."
+    exit 1
+fi
+
+# Check dependencies
+echo "Checking dependencies..."
+if ! go mod verify; then
+    echo "Error: Dependency verification failed. Please check your dependencies."
+    exit 1
+fi
+
+echo "All pre-push checks passed! 🚀"
+exit 0

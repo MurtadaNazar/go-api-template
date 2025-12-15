@@ -1,0 +1,75 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-go-platform-template}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-go-platform-template}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-go-platform-template}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-platform-template-network
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - go-platform-template-network
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    volumes:
+      - ../:/app
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-go-platform-template}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-secret}
+      - DB_NAME=${POSTGRES_DB:-go-platform-template}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_USE_SSL=false
+      - GIN_MODE=debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - go-platform-template-network
+    command: go run cmd/server/main.go
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  go-platform-template-network:
+    driver: bridge
