@@ -8,10 +8,33 @@ import (
 	"go_platform_template/internal/shared/response"
 	"go_platform_template/internal/platform/validation"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+// allowedSortFields defines the valid fields for sorting
+var allowedSortFields = map[string]struct{}{
+	"created_at": {},
+	"username":   {},
+	"email":      {},
+}
+
+// allowedSortOrders defines the valid sort directions
+var allowedSortOrders = map[string]struct{}{
+	"asc":  {},
+	"desc": {},
+}
+
+// getKeysList returns a comma-separated list of keys from a map
+func getKeysList(m map[string]struct{}) string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	return strings.Join(keys, ", ")
+}
 
 type UserHandler struct {
 	service   service.UserService
@@ -87,8 +110,28 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		filters["user_type"] = v
 	}
 
-	sortBy := c.DefaultQuery("sort_by", "created_at")
-	sortOrder := c.DefaultQuery("sort_order", "asc")
+	sortBy := strings.TrimSpace(c.DefaultQuery("sort_by", "created_at"))
+	sortOrder := strings.ToLower(strings.TrimSpace(c.DefaultQuery("sort_order", "asc")))
+
+	// Validate sortBy field
+	if _, ok := allowedSortFields[sortBy]; !ok {
+		h.logger.Warnw("invalid sort_by field", "sort_by", sortBy, "request_id", requestID)
+		_ = c.Error(apperrors.NewAppError(
+			apperrors.BadRequestError,
+			fmt.Sprintf("Invalid sort_by field. Allowed fields: %s", getKeysList(allowedSortFields)),
+		))
+		return
+	}
+
+	// Validate sortOrder
+	if _, ok := allowedSortOrders[sortOrder]; !ok {
+		h.logger.Warnw("invalid sort_order value", "sort_order", sortOrder, "request_id", requestID)
+		_ = c.Error(apperrors.NewAppError(
+			apperrors.BadRequestError,
+			fmt.Sprintf("Invalid sort_order. Allowed values: %s", getKeysList(allowedSortOrders)),
+		))
+		return
+	}
 
 	users, err := h.service.List(c.Request.Context(), offset, limit, filters, sortBy, sortOrder)
 	if err != nil {
