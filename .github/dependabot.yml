@@ -5,6 +5,8 @@ updates:
     directory: "/"                 # Root of the repository
     schedule:
       interval: "weekly"           # Check weekly
+      day: "monday"                # Run on Monday
+      time: "03:00"                # UTC timezone - 3:00 AM
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -12,13 +14,14 @@ updates:
     labels:
       - "dependencies"
       - "update"
-    security-updates-only: false    # Set true to only open security fixes
 
   # GitHub Actions updates
   - package-ecosystem: "github-actions"
     directory: "/"                 # Looks in .github/workflows/
     schedule:
-      interval: "weekly"
+      interval: "weekly"           # Check weekly
+      day: "tuesday"               # Run on Tuesday
+      time: "03:00"                # UTC timezone - 3:00 AM
     commit-message:
       prefix: "ci"
       include: "scope"
