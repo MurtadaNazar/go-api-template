@@ -15,16 +15,25 @@ import (
 )
 
 // allowedSortFields defines the valid fields for sorting
-var allowedSortFields = map[string]string{
-	"created_at": "created_at",
-	"username":   "username",
-	"email":      "email",
+var allowedSortFields = map[string]struct{}{
+	"created_at": {},
+	"username":   {},
+	"email":      {},
 }
 
 // allowedSortOrders defines the valid sort directions
-var allowedSortOrders = map[string]string{
-	"asc":  "asc",
-	"desc": "desc",
+var allowedSortOrders = map[string]struct{}{
+	"asc":  {},
+	"desc": {},
+}
+
+// getKeysList returns a comma-separated list of keys from a map
+func getKeysList(m map[string]struct{}) string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	return strings.Join(keys, ", ")
 }
 
 type UserHandler struct {
@@ -102,14 +111,14 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	}
 
 	sortBy := strings.TrimSpace(c.DefaultQuery("sort_by", "created_at"))
-	sortOrder := strings.TrimSpace(c.DefaultQuery("sort_order", "asc"))
+	sortOrder := strings.ToLower(strings.TrimSpace(c.DefaultQuery("sort_order", "asc")))
 
 	// Validate sortBy field
 	if _, ok := allowedSortFields[sortBy]; !ok {
 		h.logger.Warnw("invalid sort_by field", "sort_by", sortBy, "request_id", requestID)
 		_ = c.Error(apperrors.NewAppError(
 			apperrors.BadRequestError,
-			"Invalid sort_by field. Allowed fields: created_at, username, email",
+			fmt.Sprintf("Invalid sort_by field. Allowed fields: %s", getKeysList(allowedSortFields)),
 		))
 		return
 	}
@@ -119,7 +128,7 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		h.logger.Warnw("invalid sort_order value", "sort_order", sortOrder, "request_id", requestID)
 		_ = c.Error(apperrors.NewAppError(
 			apperrors.BadRequestError,
-			"Invalid sort_order. Allowed values: asc, desc",
+			fmt.Sprintf("Invalid sort_order. Allowed values: %s", getKeysList(allowedSortOrders)),
 		))
 		return
 	}
