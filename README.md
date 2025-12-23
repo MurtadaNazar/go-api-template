@@ -575,7 +575,9 @@ All contributions require review. Ensure:
 
 ## License
 
-[Specify your license here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+MIT License © 2025 Murtaza Nazar
 
 ---
 
