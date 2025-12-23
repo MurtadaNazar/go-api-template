@@ -1,6 +1,28 @@
 version: 2
 updates:
+  # Go module updates
   - package-ecosystem: "gomod"
-    directory: "/" 
+    directory: "/"                 # Root of the repository
+    schedule:
+      interval: "weekly"           # Check weekly
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "update"
+    security-updates-only: false    # Set true to only open security fixes
+
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"                 # Looks in .github/workflows/
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    open-pull-requests-limit: 5
+    labels:
+      - "ci"
+      - "update"
