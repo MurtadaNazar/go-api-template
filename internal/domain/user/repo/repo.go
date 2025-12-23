@@ -124,17 +124,22 @@ func (r *userRepo) List(ctx context.Context, offset, limit int, filters map[stri
 			column = "created_at"
 		case "username":
 			column = "username"
+		case "email":
+			column = "email"
 		default:
 			// Fallback to a safe default if an unsupported sort field is requested
 			column = "created_at"
 		}
 
+		// Explicitly map sortOrder to a validated, hard-coded value to prevent SQL injection
+		// Only allow "asc" or "desc" (case-insensitive), default to "asc"
 		normalizedSortOrder := strings.ToLower(sortOrder)
-		if normalizedSortOrder != "desc" {
-			normalizedSortOrder = "asc"
+		direction := "asc"
+		if normalizedSortOrder == "desc" {
+			direction = "desc"
 		}
 
-		order := column + " " + normalizedSortOrder
+		order := column + " " + direction
 		query = query.Order(order)
 	}
 
