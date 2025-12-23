@@ -153,7 +153,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, log *zap.Sug
 				files.GET("/", fileHandler.GetUserFiles)
 			}
 		}
-
 	}
 
 	log.Info("Routes registered successfully under /api/v1")

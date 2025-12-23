@@ -73,3 +73,17 @@ func IsAppError(err error) (*AppError, bool) {
 	appErr, ok := err.(*AppError)
 	return appErr, ok
 }
+
+// Predefined errors for err113 compliance
+var (
+	ErrTokenNotFound          = NewAppError(NotFoundError, "token not found")
+	ErrTokenNotFoundExpired   = NewAppError(NotFoundError, "token not found or expired")
+	ErrInvalidToken           = NewAppError(UnauthorizedError, "invalid token")
+	ErrInvalidRefreshToken    = NewAppError(UnauthorizedError, "invalid or expired refresh token")
+	ErrUsernameAlreadyTaken   = NewAppError(ConflictError, "username already taken")
+	ErrEmailAlreadyRegistered = NewAppError(ConflictError, "email already registered")
+	ErrUserNotFound           = NewAppError(NotFoundError, "user not found")
+	ErrDatabaseError          = NewAppError(InternalError, "database error")
+	ErrInvalidFileExtension   = NewAppError(ValidationError, "file must have a valid extension")
+	ErrUnsupportedFileType    = NewAppError(ValidationError, "unsupported file type")
+)

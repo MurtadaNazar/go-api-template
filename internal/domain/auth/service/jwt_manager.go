@@ -1,9 +1,9 @@
 package service
 
 import (
-	"errors"
 	"time"
 
+	apperrors "go_platform_template/internal/shared/errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -81,5 +81,5 @@ func (m *JWTManager) validateToken(tokenString, secret string) (*Claims, error) 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
 		return claims, nil
 	}
-	return nil, errors.New("invalid token")
+	return nil, apperrors.ErrInvalidToken
 }

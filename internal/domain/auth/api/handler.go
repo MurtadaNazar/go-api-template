@@ -1,10 +1,12 @@
 package api
 
 import (
+	"go_platform_template/internal/domain/auth/dto"
 	"go_platform_template/internal/domain/auth/model"
 	"go_platform_template/internal/domain/auth/service"
 	apperrors "go_platform_template/internal/shared/errors"
 	"go_platform_template/internal/shared/response"
+	"go_platform_template/internal/platform/validation"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,12 +14,17 @@ import (
 )
 
 type AuthHandler struct {
-	service *service.AuthService
-	logger  *zap.SugaredLogger
+	service   *service.AuthService
+	validator *validation.Validator
+	logger    *zap.SugaredLogger
 }
 
 func NewAuthHandler(s *service.AuthService, logger *zap.SugaredLogger) *AuthHandler {
-	return &AuthHandler{service: s, logger: logger}
+	return &AuthHandler{
+		service:   s,
+		validator: validation.New(),
+		logger:    logger,
+	}
 }
 
 // MeResponse represents the response for /me endpoint
@@ -45,7 +52,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		requestID = "unknown"
 	}
 
-	var req model.LoginRequest
+	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnw("invalid login request", "error", err, "request_id", requestID)
 		_ = c.Error(apperrors.NewAppErrorWithDetails(
@@ -53,6 +60,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			"Invalid request payload",
 			err.Error(),
 		))
+		return
+	}
+
+	if err := h.validator.ValidateStruct(&req); err != nil {
+		h.logger.Warnw("validation error on login", "error", err, "request_id", requestID)
+		_ = c.Error(err)
 		return
 	}
 
@@ -91,7 +104,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		requestID = "unknown"
 	}
 
-	var req model.RefreshRequest
+	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnw("invalid refresh request", "error", err, "request_id", requestID)
 		_ = c.Error(apperrors.NewAppErrorWithDetails(
@@ -99,6 +112,12 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 			"Invalid request payload",
 			err.Error(),
 		))
+		return
+	}
+
+	if err := h.validator.ValidateStruct(&req); err != nil {
+		h.logger.Warnw("validation error on refresh", "error", err, "request_id", requestID)
+		_ = c.Error(err)
 		return
 	}
 
@@ -136,7 +155,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		requestID = "unknown"
 	}
 
-	var req model.RefreshRequest
+	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Warnw("invalid logout request", "error", err, "request_id", requestID)
 		_ = c.Error(apperrors.NewAppErrorWithDetails(
@@ -144,6 +163,12 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 			"Invalid request payload",
 			err.Error(),
 		))
+		return
+	}
+
+	if err := h.validator.ValidateStruct(&req); err != nil {
+		h.logger.Warnw("validation error on logout", "error", err, "request_id", requestID)
+		_ = c.Error(err)
 		return
 	}
 

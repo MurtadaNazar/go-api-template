@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"errors"
 	"go_platform_template/internal/domain/auth/model"
 	"go_platform_template/internal/domain/auth/repo"
+	apperrors "go_platform_template/internal/shared/errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,7 +45,7 @@ func (s *TokenStore) Save(ctx context.Context, token string, userID uuid.UUID, r
 func (s *TokenStore) Validate(ctx context.Context, token string, rotate bool) (*RefreshTokenData, error) {
 	rt, err := s.repo.FindByToken(ctx, token)
 	if err != nil {
-		return nil, errors.New("invalid or expired refresh token")
+		return nil, apperrors.ErrInvalidRefreshToken
 	}
 
 	if rotate {

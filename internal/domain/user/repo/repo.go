@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"go_platform_template/internal/domain/user/model"
+	apperrors "go_platform_template/internal/shared/errors"
 	"strings"
 
 	"github.com/lib/pq"
@@ -36,10 +37,10 @@ func handleConstraintError(err error) error {
 	if errors.As(err, &pgErr) {
 		if pgErr.Code == "23505" { // unique_violation
 			if strings.Contains(pgErr.Constraint, "username") {
-				return errors.New("username already taken")
+				return apperrors.ErrUsernameAlreadyTaken
 			}
 			if strings.Contains(pgErr.Constraint, "email") {
-				return errors.New("email already registered")
+				return apperrors.ErrEmailAlreadyRegistered
 			}
 		}
 	}
@@ -99,7 +100,7 @@ func (r *userRepo) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	if user == nil {
-		return errors.New("user not found")
+		return apperrors.ErrUserNotFound
 	}
 	return r.db.WithContext(ctx).Delete(user).Error
 }

@@ -6,6 +6,7 @@ import (
 	"go_platform_template/internal/domain/file/service"
 	apperrors "go_platform_template/internal/shared/errors"
 	"go_platform_template/internal/shared/response"
+	"go_platform_template/internal/platform/validation"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -17,12 +18,17 @@ import (
 )
 
 type FileHandler struct {
-	service *service.FileService
-	logger  *zap.SugaredLogger
+	service   *service.FileService
+	validator *validation.Validator
+	logger    *zap.SugaredLogger
 }
 
 func NewFileHandler(s *service.FileService, logger *zap.SugaredLogger) *FileHandler {
-	return &FileHandler{service: s, logger: logger}
+	return &FileHandler{
+		service:   s,
+		validator: validation.New(),
+		logger:    logger,
+	}
 }
 
 // Upload godoc
@@ -95,7 +101,11 @@ func (h *FileHandler) Upload(c *gin.Context) {
 		_ = c.Error(apperrors.NewAppError(apperrors.InternalError, "Failed to open file"))
 		return
 	}
-	defer src.Close()
+	defer func() {
+		if err := src.Close(); err != nil {
+			h.logger.Warnf("failed to close file source: %v", err)
+		}
+	}()
 
 	// Generate secure object name with timestamp to prevent collisions
 	ext := filepath.Ext(file.Filename)

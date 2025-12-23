@@ -82,16 +82,16 @@ func (File) TableName() string {
 
 // GetFileTypeFromMIME returns the appropriate FileType based on MIME type
 func GetFileTypeFromMIME(mimeType string) FileType {
-	switch {
-	case mimeType == "application/pdf" ||
-		mimeType == "application/msword" ||
-		mimeType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+	switch mimeType {
+	case "application/pdf",
+		"application/msword",
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document":
 		return FileTypeCV
-	case mimeType == "image/jpeg" ||
-		mimeType == "image/png" ||
-		mimeType == "image/gif" ||
-		mimeType == "image/webp" ||
-		mimeType == "image/svg+xml":
+	case "image/jpeg",
+		"image/png",
+		"image/gif",
+		"image/webp",
+		"image/svg+xml":
 		return FileTypeProfileImage
 	default:
 		if len(mimeType) >= 5 && mimeType[0:5] == "image" {

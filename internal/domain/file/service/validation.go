@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"go_platform_template/internal/domain/file/model"
+	apperrors "go_platform_template/internal/shared/errors"
 	"mime"
 	"path/filepath"
 	"strings"
@@ -51,8 +52,10 @@ func ValidateFileType(req FileValidationRequest, config FileValidationConfig) er
 	actualType := model.GetFileTypeFromMIME(req.ContentType)
 
 	if req.FileType != actualType {
-		return fmt.Errorf("invalid file type for %s. Expected %s file, got %s",
-			string(req.FileType), string(req.FileType), string(actualType))
+		return apperrors.NewAppErrorWithDetails(
+			apperrors.ValidationError,
+			"invalid file type",
+			fmt.Sprintf("Expected %s file, got %s", string(req.FileType), string(actualType)))
 	}
 
 	// Validate file extension matches content type
@@ -69,14 +72,20 @@ func ValidateFileType(req FileValidationRequest, config FileValidationConfig) er
 	switch req.FileType {
 	case model.FileTypeProfileImage:
 		if req.FileSize > config.MaxProfileImageSize {
-			return fmt.Errorf("profile image too large. Maximum size is %dMB", config.MaxProfileImageSize>>20)
+			return apperrors.NewAppErrorWithDetails(
+				apperrors.ValidationError,
+				"profile image too large",
+				fmt.Sprintf("Maximum size is %dMB", config.MaxProfileImageSize>>20))
 		}
 	case model.FileTypeCV:
 		if req.FileSize > config.MaxCVSize {
-			return fmt.Errorf("CV file too large. Maximum size is %dMB", config.MaxCVSize>>20)
+			return apperrors.NewAppErrorWithDetails(
+				apperrors.ValidationError,
+				"CV file too large",
+				fmt.Sprintf("Maximum size is %dMB", config.MaxCVSize>>20))
 		}
 	default:
-		return fmt.Errorf("unsupported file type: %s", req.FileType)
+		return apperrors.NewAppError(apperrors.ValidationError, fmt.Sprintf("unsupported file type: %s", req.FileType))
 	}
 
 	return nil
@@ -87,7 +96,7 @@ func validateFileExtension(fileName, contentType string) error {
 	ext := strings.ToLower(filepath.Ext(fileName))
 
 	if ext == "" {
-		return fmt.Errorf("file must have a valid extension")
+		return apperrors.ErrInvalidFileExtension
 	}
 
 	// Get expected extensions for the content type
@@ -104,7 +113,10 @@ func validateFileExtension(fileName, contentType string) error {
 		}
 	}
 
-	return fmt.Errorf("file extension '%s' does not match content type '%s'", ext, contentType)
+	return apperrors.NewAppErrorWithDetails(
+		apperrors.ValidationError,
+		"file extension does not match content type",
+		fmt.Sprintf("Extension: %s, Content-Type: %s", ext, contentType))
 }
 
 // validateExtensionAgainstCommonMimes performs fallback validation for common MIME types
@@ -141,11 +153,14 @@ func validateExtensionAgainstCommonMimes(ext, contentType string) error {
 				return nil
 			}
 		}
-		return fmt.Errorf("file extension '%s' does not match content type '%s'", ext, contentType)
+		return apperrors.NewAppErrorWithDetails(
+			apperrors.ValidationError,
+			"file extension does not match content type",
+			fmt.Sprintf("Extension: %s, Content-Type: %s", ext, contentType))
 	}
 
 	// Unknown MIME type - be strict and reject it
-	return fmt.Errorf("unknown content type '%s'", contentType)
+	return apperrors.NewAppError(apperrors.ValidationError, fmt.Sprintf("unknown content type: %s", contentType))
 }
 
 // validateAllowedMimeTypes checks if the MIME type is allowed for the file type
@@ -158,7 +173,7 @@ func validateAllowedMimeTypes(contentType string, fileType model.FileType, confi
 	case model.FileTypeCV:
 		allowedTypes = config.AllowedCVTypes
 	default:
-		return fmt.Errorf("unsupported file type: %s", fileType)
+		return apperrors.NewAppError(apperrors.ValidationError, fmt.Sprintf("unsupported file type: %s", fileType))
 	}
 
 	for _, allowedType := range allowedTypes {
@@ -167,7 +182,10 @@ func validateAllowedMimeTypes(contentType string, fileType model.FileType, confi
 		}
 	}
 
-	return fmt.Errorf("content type '%s' is not allowed for %s files", contentType, fileType)
+	return apperrors.NewAppErrorWithDetails(
+		apperrors.ValidationError,
+		"content type not allowed",
+		fmt.Sprintf("Content-Type '%s' is not allowed for %s files", contentType, fileType))
 }
 
 // Add this method to your FileService to use the validation

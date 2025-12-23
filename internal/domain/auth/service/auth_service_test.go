@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"go_platform_template/internal/domain/user/model"
 	apperrors "go_platform_template/internal/shared/errors"
 	"go_platform_template/internal/testutil"
@@ -119,7 +118,7 @@ func TestAuthService_Login_RepositoryError(t *testing.T) {
 	service := NewAuthService(mockRepo, jwtManager, tokenStore, logger)
 
 	mockRepo.GetByEmailOrUsernameFn = func(ctx context.Context, emailOrUsername string) (*model.User, error) {
-		return nil, errors.New("database error")
+		return nil, apperrors.ErrDatabaseError
 	}
 
 	// Act

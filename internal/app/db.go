@@ -77,7 +77,11 @@ func ensureDatabaseExists(baseDSN, dbName string, log *zap.SugaredLogger) error 
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres (no db): %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Warnf("failed to close database connection: %v", err)
+		}
+	}()
 
 	var exists bool
 	query := "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1)"

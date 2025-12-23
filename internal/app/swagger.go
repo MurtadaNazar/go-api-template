@@ -93,7 +93,11 @@ func watchSwaggerBatch(debounceDuration time.Duration, baseDir string, logger *z
 		logger.Warnf("Failed to create file watcher: %v", err)
 		return
 	}
-	defer watcher.Close()
+	defer func() {
+		if err := watcher.Close(); err != nil {
+			logger.Warnf("failed to close file watcher: %v", err)
+		}
+	}()
 
 	var mu sync.Mutex
 	watchedDirs := make(map[string]struct{}) // Tracks already watched directories
@@ -195,7 +199,9 @@ func containsSwaggerAnnotations(filePath string) bool {
 	if err != nil {
 		return false
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close() // Ignore error on file close in this utility function
+	}()
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {

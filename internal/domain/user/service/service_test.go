@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"go.uber.org/zap"
@@ -317,7 +316,7 @@ func TestUserService_Delete_RepositoryError(t *testing.T) {
 		return testUser, nil
 	}
 	mockRepo.DeleteFn = func(ctx context.Context, id string) error {
-		return errors.New("database error")
+		return apperrors.ErrDatabaseError
 	}
 
 	// Act

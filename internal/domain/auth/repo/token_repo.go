@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"go_platform_template/internal/domain/auth/model"
+	apperrors "go_platform_template/internal/shared/errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -35,7 +36,7 @@ func (r *tokenRepo) FindByToken(ctx context.Context, token string) (*model.Refre
 		token, false, time.Now()).First(&refreshToken).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.New("token not found or expired")
+		return nil, apperrors.ErrTokenNotFoundExpired
 	}
 
 	return &refreshToken, err
@@ -51,7 +52,7 @@ func (r *tokenRepo) RevokeToken(ctx context.Context, token string) error {
 	}
 
 	if result.RowsAffected == 0 {
-		return errors.New("token not found")
+		return apperrors.ErrTokenNotFound
 	}
 
 	return nil

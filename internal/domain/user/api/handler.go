@@ -6,24 +6,24 @@ import (
 	"go_platform_template/internal/domain/user/service"
 	apperrors "go_platform_template/internal/shared/errors"
 	"go_platform_template/internal/shared/response"
+	"go_platform_template/internal/platform/validation"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
 type UserHandler struct {
-	service  service.UserService
-	validate *validator.Validate
-	logger   *zap.SugaredLogger
+	service   service.UserService
+	validator *validation.Validator
+	logger    *zap.SugaredLogger
 }
 
 func NewUserHandler(s service.UserService, logger *zap.SugaredLogger) *UserHandler {
 	return &UserHandler{
-		service:  s,
-		validate: validator.New(),
-		logger:   logger,
+		service:   s,
+		validator: validation.New(),
+		logger:    logger,
 	}
 }
 
@@ -166,13 +166,9 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.validate.Struct(&req); err != nil {
+	if err := h.validator.ValidateStruct(&req); err != nil {
 		h.logger.Warnw("validation error on register", "error", err, "request_id", requestID)
-		_ = c.Error(apperrors.NewAppErrorWithDetails(
-			apperrors.ValidationError,
-			"Validation failed",
-			err.Error(),
-		))
+		_ = c.Error(err)
 		return
 	}
 
@@ -222,13 +218,9 @@ func (h *UserHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := h.validate.Struct(&req); err != nil {
+	if err := h.validator.ValidateStruct(&req); err != nil {
 		h.logger.Warnw("validation error on update", "user_id", id, "error", err, "request_id", requestID)
-		_ = c.Error(apperrors.NewAppErrorWithDetails(
-			apperrors.ValidationError,
-			"Validation failed",
-			err.Error(),
-		))
+		_ = c.Error(err)
 		return
 	}
 
