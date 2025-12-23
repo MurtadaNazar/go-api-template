@@ -588,5 +588,5 @@ For issues, questions, or suggestions:
 
 ---
 
-**Last Updated:** December 2024  
-**Maintained By:** [Your Team/Name]
+**Last Updated:** December 2025  
+**Maintained By:** Murtaza Nazar
