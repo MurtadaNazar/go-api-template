@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"go_platform_template/internal/domain/user/dto"
 	"go_platform_template/internal/domain/user/service"
+	"go_platform_template/internal/platform/validation"
 	apperrors "go_platform_template/internal/shared/errors"
 	"go_platform_template/internal/shared/response"
-	"go_platform_template/internal/platform/validation"
 	"net/http"
 	"strings"
 

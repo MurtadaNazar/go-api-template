@@ -1,0 +1,27 @@
+{
+  "id": "file-storage",
+  "name": "File Storage",
+  "description": "MinIO S3-compatible file storage",
+  "required": false,
+  "depends_on": ["database"],
+  "directories": [
+    "internal/domain/file"
+  ],
+  "directories_to_copy": [
+    "internal/domain/file"
+  ],
+  "files": [
+    "internal/domain/file/api/handler.go",
+    "internal/domain/file/dto/dto.go",
+    "internal/domain/file/model/file.go",
+    "internal/domain/file/repo/repo.go",
+    "internal/domain/file/service/service.go",
+    "internal/domain/file/service/validation.go",
+    "internal/domain/file/service/validation_test.go"
+  ],
+  "config_updates": {
+    "go.mod": [
+      "github.com/minio/minio-go/v7"
+    ]
+  }
+}

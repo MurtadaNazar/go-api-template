@@ -1,26 +1,43 @@
 ---
-name: Bug Report
-about: Report a bug or unexpected behavior
+name: Bug report
+about: Report a bug to help us improve
 title: "[BUG] "
 labels: bug
 assignees: ''
 
 ---
 
-**Describe the bug**
+## Description
+
 A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior:
+## Steps to Reproduce
+
 1. 
 2. 
 3. 
 
-**Expected behavior**
-A clear description of what you expected to happen.
+## Expected Behavior
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+What you expected to happen.
 
-**Additional context**
+## Actual Behavior
+
+What actually happened.
+
+## Environment
+
+- **OS**: (Linux/macOS/Windows)
+- **Architecture**: (amd64/arm64/armv7)
+- **Version**: (run `go-platform --version` or `go version`)
+- **Terminal**: (iTerm2/VS Code/GNOME Terminal/etc.)
+
+## Logs/Output
+
+```
+Paste any error messages or logs here
+```
+
+## Additional Context
+
 Add any other context about the problem here.

@@ -1,0 +1,24 @@
+{
+  "id": "user-management",
+  "name": "User Management",
+  "description": "User registration, profiles, RBAC",
+  "required": false,
+  "depends_on": ["auth"],
+  "directories": [
+    "internal/domain/user"
+  ],
+  "directories_to_copy": [
+    "internal/domain/user"
+  ],
+  "files": [
+    "internal/domain/user/api/handler.go",
+    "internal/domain/user/dto/dto.go",
+    "internal/domain/user/model/user.go",
+    "internal/domain/user/repo/repo.go",
+    "internal/domain/user/service/service.go",
+    "internal/domain/user/service/service_test.go"
+  ],
+  "config_updates": {
+    "go.mod": []
+  }
+}

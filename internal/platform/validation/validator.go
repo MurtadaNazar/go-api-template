@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	apperrors "go_platform_template/internal/shared/errors"
 	"github.com/go-playground/validator/v10"
+	apperrors "go_platform_template/internal/shared/errors"
 )
 
 // Validator wraps the playground validator for tag-based validation

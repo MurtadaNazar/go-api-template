@@ -1,0 +1,28 @@
+{
+  "id": "api-docs",
+  "name": "API Docs",
+  "description": "Auto-generated Swagger documentation",
+  "required": false,
+  "depends_on": [],
+  "directories": [
+    "docs"
+  ],
+  "directories_to_copy": [
+    "docs"
+  ],
+  "files": [
+    "docs/docs.go",
+    "docs/swagger.json",
+    "docs/swagger.yaml",
+    "docs/v1/docs.go",
+    "docs/v1/swagger.json",
+    "docs/v1/swagger.yaml",
+    "internal/app/swagger.go"
+  ],
+  "config_updates": {
+    "go.mod": [
+      "github.com/swaggo/swag",
+      "github.com/swaggo/gin-swagger"
+    ]
+  }
+}

@@ -1,85 +1,103 @@
-version: "2"
-
 run:
   timeout: 5m
-  issues-exit-code: 1
   tests: true
-  build-tags:
-    - integration
-  modules-download-mode: readonly
-  buildvcs: false
-
-output:
-  format: colored-line-number
 
 linters:
   enable:
-    # Default / core
-    - errcheck
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-
-    # Extra quality & correctness
+    - asasalint
+    - asciicheck
     - bidichk
     - bodyclose
     - contextcheck
+    - decorder
+    - depguard
     - dogsled
+    - dupl
+    - dupword
     - durationcheck
+    - errcheck
     - errchkjson
-    - copyloopvar
+    - errname
+    - errorlint
+    - exhaustive
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
     - gocritic
-    - err113
+    - gocyclo
+    - godot
+    - goheader
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosmopolitan
+    - gosimple
+    - govet
+    - grouper
+    - importas
+    - ineffassign
+    - interfacebloat
+    - intrange
+    - ireturn
+    - lll
+    - loggercheck
+    - maintidx
+    - makezero
+    - misspell
+    - musttag
+    - nakedret
+    - nilnil
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - nosprintfhostport
     - prealloc
+    - predeclared
     - reassign
+    - revive
     - rowserrcheck
+    - sloglint
+    - spancheck
     - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - tagliatelle
+    - testableexamples
+    - thelper
+    - tparallel
+    - typecheck
     - unconvert
     - unparam
+    - unused
     - usestdlibvars
+    - wastedassign
     - whitespace
+    - wrapcheck
+    - wsl
+    - zerologlint
 
-linter-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - (*github.com/gin-gonic/gin.Context).Error
-      - (*go.uber.org/zap.SugaredLogger).Sync
-
-  govet:
-    enable-all: true
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-      - experimental
-    disabled-checks:
-      - sloppyReassign
-      - hugeParam
-      - rangeValCopy
-
-  unused:
-    check-exported: false
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  
+  lll:
+    line-length: 120
+  
+  goimports:
+    local-prefixes: go_platform_template
+  
+  revive:
+    rules:
+      - name: exported
+        severity: error
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
         - unparam
-        - unused
-        - err113
-
-    - path: docs/
-      linters:
-        - unused
-
-    - path: cmd/server/main.go
-      linters:
-        - dogsled
-
-  max-issues-per-linter: 0
-  max-same-issues: 0
