@@ -237,7 +237,7 @@ func copyDirFromEmbed(srcPath, dstPath string) error {
 	if _, err := fs.Stat(scaffoldFS, srcPath); err != nil {
 		// Debug: list available paths
 		var available []string
-		fs.WalkDir(scaffoldFS, ".", func(path string, entry fs.DirEntry, err error) error {
+		_ = fs.WalkDir(scaffoldFS, ".", func(path string, entry fs.DirEntry, err error) error {
 			if err == nil && !entry.IsDir() {
 				available = append(available, path)
 			}
@@ -263,9 +263,7 @@ func copyDirFromEmbed(srcPath, dstPath string) error {
 		}
 
 		// Strip .tmpl extension (used to work around go:embed module boundary rules)
-		if strings.HasSuffix(relPath, ".tmpl") {
-			relPath = strings.TrimSuffix(relPath, ".tmpl")
-		}
+		relPath = strings.TrimSuffix(relPath, ".tmpl")
 
 		targetPath := filepath.Join(dstPath, relPath)
 
