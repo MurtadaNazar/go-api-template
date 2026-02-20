@@ -91,4 +91,3 @@ issues:
         - errcheck
         - dupl
         - gosec
-        - unparam
