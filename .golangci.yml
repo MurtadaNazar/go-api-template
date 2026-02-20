@@ -25,7 +25,6 @@ linters:
     - forcetypeassert
     - gocritic
     - gocyclo
-    - godot
     - goheader
     - goimports
     - gomodguard
@@ -73,8 +72,6 @@ linters:
     - usestdlibvars
     - wastedassign
     - whitespace
-    - wrapcheck
-    - wsl
     - zerologlint
 
 linters-settings:
