@@ -19,7 +19,7 @@ jobs:
           # Linux
           - { runner: ubuntu-latest, os: linux, arch: amd64, flags: "" }
           - { runner: ubuntu-latest, os: linux, arch: arm64, flags: "" }
-          - { runner: ubuntu-latest, os: linux, arch: armv7, flags: "-e GOARM=7" }
+          - { runner: ubuntu-latest, os: linux, arch: arm, flags: "GOARM=7" }
           # macOS
           - { runner: macos-latest, os: darwin, arch: amd64, flags: "" }
           - { runner: macos-latest, os: darwin, arch: arm64, flags: "" }
@@ -48,7 +48,7 @@ jobs:
             OUTPUT="${OUTPUT}.exe"
           fi
           
-          env CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} ${{ matrix.flags }} \
+          CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} ${{ matrix.flags }} \
           go build \
             -ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}" \
             -o dist/${OUTPUT}
