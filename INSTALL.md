@@ -68,7 +68,7 @@ go-platform version
 
 ### Prerequisites
 
-- Go 1.25.1 or higher
+- Go 1.24 or higher
 - Git
 
 ### Clone & Build

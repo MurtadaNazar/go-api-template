@@ -37,7 +37,7 @@ Direct download from [GitHub Releases page](https://github.com/murtadanazar/go-a
 go install github.com/murtadanazar/go-api-template@latest
 ```
 
-For Go developers. Requires Go 1.25.1+.
+For Go developers. Requires Go 1.24+.
 
 ## Release Process
 

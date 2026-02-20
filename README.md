@@ -279,7 +279,7 @@ Works on:
 ```
 Binary: ~7 MB (statically linked)
 Platform: Cross-platform (Linux, macOS, Windows)
-Go: 1.25+
+Go: 1.24+
 Startup: < 100ms
 ```
 
@@ -367,7 +367,7 @@ Supports Linux, macOS, and Windows on amd64, arm64, and armv7.
 **TUI won't run:**
 ```bash
 # Check Go version (if building from source)
-go version  # Should be 1.25+
+go version  # Should be 1.24+
 
 # Run directly
 go run .
