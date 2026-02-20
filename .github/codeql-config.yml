@@ -1,0 +1,15 @@
+name: "CodeQL Config"
+
+paths:
+  - internal
+  - scripts
+  - main.go
+
+paths-ignore:
+  - scaffold
+  - docs
+
+queries:
+  - uses: security-and-quality
+
+disable-default-queries: false
