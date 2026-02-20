@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   app:
     build:
@@ -16,7 +14,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD:-postgres}
       - DB_NAME=${DB_NAME:-{{.ProjectName}}}
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRY=${JWT_EXPIRY:-15m}
+      - JWT_EXPIRY=${JWT_ACCESS_EXPIRY:-15m}
       - JWT_REFRESH_EXPIRY=${JWT_REFRESH_EXPIRY:-7d}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
@@ -25,9 +23,8 @@ services:
       - MINIO_SECURE=false
     depends_on:
       - postgres
+      - redis
       - minio
-    volumes:
-      - .:/app
     networks:
       - app_network
 
@@ -38,7 +35,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
       - POSTGRES_DB=${DB_NAME:-{{.ProjectName}}}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_EXPOSED_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -49,17 +46,31 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_EXPOSED_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   minio:
     image: minio/minio:latest
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    command: minio server /minio_data --console-address ":9001"
+    command: server /data --console-address ":9001"
     volumes:
-      - minio_data:/minio_data
+      - minio_data:/data
     networks:
       - app_network
     healthcheck:
@@ -70,6 +81,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   minio_data:
 
 networks:

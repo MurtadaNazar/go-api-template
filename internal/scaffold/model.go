@@ -20,6 +20,7 @@ const (
 	StateModuleName
 	StateProjectPath
 	StateFeatures
+	StateEnvVars
 	StateConfirm
 	StateProcessing
 	StateSuccess
@@ -37,7 +38,7 @@ type Feature struct {
 	Default     bool
 }
 
-// Fixed container width for consistent layout
+// Fixed container width for consistent layout - account for borders (2) + padding (4)
 const CONTAINER_WIDTH = 70
 
 type MenuItem struct {
@@ -52,6 +53,12 @@ type Model struct {
 	projectName string
 	moduleName  string
 	projectPath string
+
+	// Environment Variables
+	envVars    map[string]string
+	envFocus   int
+	envEditing bool
+	envInput   textinput.Model
 
 	// UI Components
 	inputs     []textinput.Model
@@ -102,7 +109,7 @@ func NewModel() *Model {
 	inputs[0].PlaceholderStyle = styles.Blurred
 	inputs[0].Cursor.Style = styles.Focused
 	inputs[0].Focus()
-	inputs[0].Width = CONTAINER_WIDTH - 6
+	inputs[0].Width = CONTAINER_WIDTH - 12
 
 	// Module name input
 	inputs[1] = textinput.New()
@@ -112,7 +119,7 @@ func NewModel() *Model {
 	inputs[1].TextStyle = styles.Blurred
 	inputs[1].PlaceholderStyle = styles.Blurred
 	inputs[1].Cursor.Style = styles.Blurred
-	inputs[1].Width = CONTAINER_WIDTH - 6
+	inputs[1].Width = CONTAINER_WIDTH - 12
 
 	// Project path input
 	inputs[2] = textinput.New()
@@ -122,7 +129,17 @@ func NewModel() *Model {
 	inputs[2].TextStyle = styles.Blurred
 	inputs[2].PlaceholderStyle = styles.Blurred
 	inputs[2].Cursor.Style = styles.Blurred
-	inputs[2].Width = CONTAINER_WIDTH - 6
+	inputs[2].Width = CONTAINER_WIDTH - 12
+
+	// Environment variable input
+	envInput := textinput.New()
+	envInput.Placeholder = "value"
+	envInput.CharLimit = 200
+	envInput.PromptStyle = styles.Focused
+	envInput.TextStyle = styles.Focused
+	envInput.PlaceholderStyle = styles.Blurred
+	envInput.Cursor.Style = styles.Focused
+	envInput.Width = CONTAINER_WIDTH - 20
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -136,6 +153,7 @@ func NewModel() *Model {
 		"Database":             {},
 		"API Docs":             {},
 		"Docker":               {},
+		"Podman":               {},
 	}
 
 	// Initialize features
@@ -176,6 +194,12 @@ func NewModel() *Model {
 			Selected:    true,
 			Default:     true,
 		},
+		{
+			Name:        "Podman",
+			Description: "Podman & Podman Compose setup",
+			Selected:    false,
+			Default:     false,
+		},
 	}
 
 	// Initialize main menu items
@@ -200,6 +224,10 @@ func NewModel() *Model {
 		menuFocus:           0,
 		currentMenu:         "main",
 		featureDependencies: featureDependencies,
+		envVars:             make(map[string]string),
+		envFocus:            0,
+		envEditing:          false,
+		envInput:            envInput,
 	}
 }
 
@@ -237,6 +265,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.featureFocus < 0 {
 					m.featureFocus = len(m.features) - 1
 				}
+			} else if m.state == StateEnvVars && !m.envEditing {
+				m.envFocus--
+				if m.envFocus < 0 {
+					m.envFocus = 7
+				}
 			}
 
 		case tea.KeyDown:
@@ -250,6 +283,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.featureFocus >= len(m.features) {
 					m.featureFocus = 0
 				}
+			} else if m.state == StateEnvVars && !m.envEditing {
+				m.envFocus++
+				if m.envFocus > 7 {
+					m.envFocus = 0
+				}
+			}
+
+		case tea.KeyEscape:
+			if m.state == StateEnvVars && m.envEditing {
+				m.envEditing = false
+				m.envInput.Reset()
+				return m, nil
 			}
 
 		case tea.KeySpace:
@@ -285,6 +330,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.focusIndex < len(m.inputs) {
 					return m, m.inputs[m.focusIndex].Focus()
 				}
+			} else if m.state == StateEnvVars && !m.envEditing {
+				m.state = StateConfirm
+				return m, nil
 			}
 
 		case tea.KeyShiftTab:
@@ -384,7 +432,40 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 
 			case StateFeatures:
-				m.state = StateConfirm
+				m.state = StateEnvVars
+				m.envFocus = 0
+				return m, nil
+
+			case StateEnvVars:
+				if m.envEditing {
+					envKeys := []string{"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "JWT_SECRET", "MINIO_ACCESS_KEY", "MINIO_SECRET_KEY"}
+					if m.envFocus < len(envKeys) {
+						m.envVars[envKeys[m.envFocus]] = m.envInput.Value()
+					}
+					m.envEditing = false
+					m.envInput.Reset()
+				} else {
+					envKeys := []string{"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME", "JWT_SECRET", "MINIO_ACCESS_KEY", "MINIO_SECRET_KEY"}
+					defaults := map[string]string{
+						"DB_HOST":          "localhost",
+						"DB_PORT":          "5432",
+						"DB_USER":          "postgres",
+						"DB_PASSWORD":      "postgres",
+						"DB_NAME":          m.projectName,
+						"JWT_SECRET":       "your-secret-key-change-in-production",
+						"MINIO_ACCESS_KEY": "minioadmin",
+						"MINIO_SECRET_KEY": "minioadmin",
+					}
+					if m.envFocus < len(envKeys) {
+						currentValue := defaults[envKeys[m.envFocus]]
+						if v, ok := m.envVars[envKeys[m.envFocus]]; ok {
+							currentValue = v
+						}
+						m.envInput.SetValue(currentValue)
+						m.envEditing = true
+						return m, m.envInput.Focus()
+					}
+				}
 				return m, nil
 
 			case StateConfirm:
@@ -421,6 +502,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Handle other key inputs in input states
 			if m.state == StateProjectName || m.state == StateModuleName || m.state == StateProjectPath {
 				return m, m.updateInputs(msg)
+			}
+
+			// Handle env input editing
+			if m.state == StateEnvVars && m.envEditing {
+				var cmd tea.Cmd
+				m.envInput, cmd = m.envInput.Update(msg)
+				return m, cmd
 			}
 		}
 
@@ -487,6 +575,8 @@ func (m *Model) View() string {
 		return m.viewProjectPath()
 	case StateFeatures:
 		return m.viewFeatures()
+	case StateEnvVars:
+		return m.viewEnvVars()
 	case StateConfirm:
 		return m.viewConfirm()
 	case StateProcessing:
@@ -518,17 +608,14 @@ func (m *Model) viewMainMenu() string {
 	for i, item := range m.menuItems {
 		var line string
 		if i == m.menuFocus {
-			// Focused item
-			marker := m.styles.Focused.Render("▶")
-			label := m.styles.Focused.Bold(true).Render(item.Label)
-			desc := m.styles.Subtitle.Render(item.Description)
-			line = marker + " " + label + "\n  " + desc
+			cursor := m.styles.Focused.Render("▸")
+			label := m.styles.Focused.Render(item.Label)
+			desc := m.styles.Blurred.Render("    " + item.Description)
+			line = fmt.Sprintf("  %s %s\n%s", cursor, label, desc)
 		} else {
-			// Unfocused item
-			marker := "  "
 			label := m.styles.Blurred.Render(item.Label)
-			desc := m.styles.Subtitle.Render(item.Description)
-			line = marker + label + "\n  " + desc
+			desc := m.styles.Blurred.Render("    " + item.Description)
+			line = fmt.Sprintf("    %s\n%s", label, desc)
 		}
 		menuLines = append(menuLines, line)
 	}
@@ -548,11 +635,7 @@ func (m *Model) viewMainMenu() string {
 		instructions,
 	)
 
-	// Center content if terminal is wide enough
-	if m.width > CONTAINER_WIDTH {
-		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
-	}
-	return content
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content)
 }
 
 func (m *Model) viewHelp() string {
@@ -581,10 +664,7 @@ func (m *Model) viewHelp() string {
 		footer,
 	)
 
-	if m.width > CONTAINER_WIDTH {
-		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
-	}
-	return content
+	return m.padContent(content)
 }
 
 func (m *Model) viewWelcome() string {
@@ -617,7 +697,7 @@ func (m *Model) viewWelcome() string {
 }
 
 func (m *Model) viewProjectName() string {
-	header := m.renderHeader("Project Name", 1, 5)
+	header := m.renderHeader("Project Name", 1, 6)
 
 	input := m.renderInputField(0)
 
@@ -659,7 +739,7 @@ func (m *Model) viewProjectName() string {
 }
 
 func (m *Model) viewModuleName() string {
-	header := m.renderHeader("Go Module", 2, 5)
+	header := m.renderHeader("Go Module", 2, 6)
 
 	input := m.renderInputField(1)
 
@@ -705,7 +785,7 @@ func (m *Model) viewModuleName() string {
 }
 
 func (m *Model) viewProjectPath() string {
-	header := m.renderHeader("Project Location", 3, 5)
+	header := m.renderHeader("Project Location", 3, 6)
 
 	input := m.renderInputField(2)
 
@@ -756,7 +836,7 @@ func (m *Model) viewProjectPath() string {
 }
 
 func (m *Model) viewFeatures() string {
-	header := m.renderHeader("Select Features", 4, 5)
+	header := m.renderHeader("Select Features", 4, 6)
 
 	featuresList := ""
 	for i, feat := range m.features {
@@ -767,18 +847,25 @@ func (m *Model) viewFeatures() string {
 			checkbox = m.styles.Blurred.Render("[ ]")
 		}
 
-		featureText := fmt.Sprintf("%s %s", checkbox, feat.Name)
-
+		var featureText string
 		if i == m.featureFocus {
-			featureText = m.styles.Focused.Render("> " + featureText)
+			cursor := m.styles.Focused.Render("▸")
+			name := m.styles.Focused.Render(feat.Name)
+			featureText = fmt.Sprintf("  %s %s %s", cursor, checkbox, name)
 		} else {
-			featureText = "  " + featureText
+			featureText = fmt.Sprintf("    %s %s", checkbox, feat.Name)
 		}
 
-		if i < len(m.features)-1 {
-			featureText += "\n"
-		}
 		featuresList += featureText
+		if i < len(m.features)-1 {
+			featuresList += "\n"
+		}
+	}
+
+	// Show description of focused feature
+	if m.featureFocus >= 0 && m.featureFocus < len(m.features) {
+		desc := m.features[m.featureFocus].Description
+		featuresList += "\n\n" + m.styles.Blurred.Render("    "+desc)
 	}
 
 	selectedCount := 0
@@ -835,8 +922,92 @@ func (m *Model) viewFeatures() string {
 	return m.padContent(content)
 }
 
+func (m *Model) viewEnvVars() string {
+	header := m.renderHeader("Environment Variables", 5, 6)
+
+	envFields := []struct {
+		key   string
+		label string
+		desc  string
+	}{
+		{"DB_HOST", "Database Host", "PostgreSQL host"},
+		{"DB_PORT", "Database Port", "PostgreSQL port"},
+		{"DB_USER", "Database User", "PostgreSQL username"},
+		{"DB_PASSWORD", "Database Password", "PostgreSQL password"},
+		{"DB_NAME", "Database Name", "Database name"},
+		{"JWT_SECRET", "JWT Secret", "Secret key for JWT"},
+		{"MINIO_ACCESS_KEY", "MinIO Access Key", "MinIO access key"},
+		{"MINIO_SECRET_KEY", "MinIO Secret Key", "MinIO secret key"},
+	}
+
+	defaults := map[string]string{
+		"DB_HOST":          "localhost",
+		"DB_PORT":          "5432",
+		"DB_USER":          "postgres",
+		"DB_PASSWORD":      "postgres",
+		"DB_NAME":          m.projectName,
+		"JWT_SECRET":       "your-secret-key-change-in-production",
+		"MINIO_ACCESS_KEY": "minioadmin",
+		"MINIO_SECRET_KEY": "minioadmin",
+	}
+
+	var lines []string
+	for i, field := range envFields {
+		value, exists := m.envVars[field.key]
+		if !exists {
+			value = defaults[field.key]
+		}
+
+		cursor := "  "
+		style := m.styles.Blurred
+		if i == m.envFocus {
+			cursor = m.styles.Focused.Render("▸ ")
+			style = m.styles.Focused
+		}
+
+		var line string
+		if m.envEditing && i == m.envFocus {
+			line = fmt.Sprintf("%s%s: %s",
+				cursor,
+				style.Render(field.label),
+				m.envInput.View(),
+			)
+		} else {
+			line = fmt.Sprintf("%s%s: %s",
+				cursor,
+				style.Render(field.label),
+				m.styles.Description.Render(value),
+			)
+		}
+		lines = append(lines, line)
+	}
+
+	instruction := m.styles.Info.Render("Press ENTER to edit selected value")
+	if m.envEditing {
+		instruction = m.styles.Info.Render("Press ENTER to save, ESC to cancel")
+	}
+
+	skipText := m.styles.Help.Render("TAB = Skip to next step")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		header,
+		"",
+		m.styles.Label.Render("Configure environment variables:"),
+		"",
+		lipgloss.JoinVertical(lipgloss.Left, lines...),
+		"",
+		instruction,
+		skipText,
+		"",
+		m.styles.Help.Render("UP/DOWN = Navigate"),
+	)
+
+	return m.padContent(content)
+}
+
 func (m *Model) viewConfirm() string {
-	header := m.renderHeader("Review & Confirm", 5, 5)
+	header := m.renderHeader("Review & Confirm", 6, 6)
 
 	fullPath := m.projectPath + "/" + m.projectName
 	if m.projectPath == "." {
@@ -872,15 +1043,40 @@ func (m *Model) viewConfirm() string {
 		),
 	)
 
+	buttonWidth := 20
+
+	createBtn := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("0")).
+		Background(m.styles.Focused.GetForeground()).
+		Padding(0, 1).
+		Bold(true).
+		Width(buttonWidth).
+		Align(lipgloss.Center).
+		Render("Create Project")
+
+	cancelBtn := lipgloss.NewStyle().
+		Foreground(m.styles.Blurred.GetForeground()).
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(m.styles.Blurred.GetForeground()).
+		Padding(0, 1).
+		Width(buttonWidth).
+		Align(lipgloss.Center).
+		Render("CTRL+C Cancel")
+
 	buttons := lipgloss.JoinHorizontal(
-		lipgloss.Left,
-		m.styles.ButtonFocused.Render("→ Create Project"),
-		"  or  ",
-		m.styles.ButtonBlurred.Render("CTRL+C Cancel"),
+		lipgloss.Center,
+		createBtn,
+		"   ",
+		cancelBtn,
 	)
 
+	buttons = lipgloss.NewStyle().
+		Width(CONTAINER_WIDTH).
+		Align(lipgloss.Center).
+		Render(buttons)
+
 	footer := m.renderFooter()
-	helpKeys := m.renderKeyboardHelp("Enter", "Create", "CTRL+C", "Cancel")
+	helpKeys := m.styles.Help.Render("Press ENTER to create project or CTRL+C to cancel")
 
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -963,6 +1159,7 @@ func (m *Model) viewSuccess() string {
 		"File Storage":         "✓ MinIO File Storage",
 		"API Docs":             "✓ Auto-Generated Swagger Docs",
 		"Docker":               "✓ Docker & Docker Compose Setup",
+		"Podman":               "✓ Podman & Podman Compose Setup",
 	}
 
 	for _, feat := range m.features {
@@ -1053,7 +1250,7 @@ func (m *Model) renderInputField(idx int) string {
 func (m *Model) renderHeader(title string, step, totalSteps int) string {
 	steps := m.renderStepIndicator(step, totalSteps)
 	titleRendered := m.styles.Title.Render(title)
-	divider := m.styles.Divider.Render(m.repeatString("─", CONTAINER_WIDTH))
+	divider := m.styles.Divider.Render(strings.Repeat("─", CONTAINER_WIDTH))
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -1064,7 +1261,7 @@ func (m *Model) renderHeader(title string, step, totalSteps int) string {
 }
 
 func (m *Model) renderFooter() string {
-	return m.styles.Divider.Render(m.repeatString("─", CONTAINER_WIDTH))
+	return m.styles.Divider.Render(strings.Repeat("─", CONTAINER_WIDTH))
 }
 
 func (m *Model) renderContainer(content string) string {
@@ -1101,46 +1298,7 @@ func (m *Model) renderKeyValue(key, value string) string {
 }
 
 func (m *Model) padContent(content string) string {
-	lines := strings.Split(content, "\n")
-	padded := make([]string, 0, len(lines))
-
-	for _, line := range lines {
-		// Center lines that are shorter than container width
-		lineLen := countVisibleChars(line)
-		targetWidth := CONTAINER_WIDTH
-
-		if lineLen < targetWidth {
-			padding := (targetWidth - lineLen) / 2
-			padded = append(padded, m.repeatString(" ", padding)+line)
-		} else {
-			padded = append(padded, line)
-		}
-	}
-
-	return strings.Join(padded, "\n")
-}
-
-func (m *Model) repeatString(s string, count int) string {
-	result := ""
-	for i := 0; i < count; i++ {
-		result += s
-	}
-	return result
-}
-
-func countVisibleChars(s string) int {
-	count := 0
-	inEscape := false
-	for _, ch := range s {
-		if ch == '\x1b' {
-			inEscape = true
-		} else if inEscape && (ch == 'm' || ch == 'K') {
-			inEscape = false
-		} else if !inEscape && ch != '\n' && ch != '\r' {
-			count++
-		}
-	}
-	return count
+	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, content)
 }
 
 // Validators

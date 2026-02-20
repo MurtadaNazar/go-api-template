@@ -13,8 +13,8 @@ GOTEST=$(GOCMD) test
 GOMOD=$(GOCMD) mod
 GORUN=$(GOCMD) run
 
-# Docker compose file
-DC_FILE=docker-compose.yml
+# Container compose file
+DC_FILE={{.ComposeFile}}
 
 # Build flags
 LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}"
@@ -91,26 +91,30 @@ update-deps:
 	$(GOMOD) tidy
 	@echo "✓ Dependencies updated"
 
-# Start development environment with Docker
+# Start development environment
 dev:
+	@echo "Tidying dependencies..."
+	$(GOMOD) tidy
 	@echo "Starting development environment..."
-	docker compose -f $(DC_FILE) up --build
+	{{.ContainerCmd}} compose --env-file .env -f $(DC_FILE) up --build
 
 # Start development environment in background
 dev-d:
+	@echo "Tidying dependencies..."
+	$(GOMOD) tidy
 	@echo "Starting development environment in background..."
-	docker compose -f $(DC_FILE) up -d --build
+	{{.ContainerCmd}} compose --env-file .env -f $(DC_FILE) up -d --build
 	@echo "✓ Development environment started"
 
 # Stop development environment
 dev-down:
 	@echo "Stopping development environment..."
-	docker compose -f $(DC_FILE) down
+	{{.ContainerCmd}} compose --env-file .env -f $(DC_FILE) down
 	@echo "✓ Development environment stopped"
 
 # View logs
 dev-logs:
-	docker compose -f $(DC_FILE) logs -f
+	{{.ContainerCmd}} compose --env-file .env -f $(DC_FILE) logs -f
 
 # Lint code (requires golangci-lint)
 lint:

@@ -1,0 +1,7 @@
+{
+  "id": "podman",
+  "name": "Podman",
+  "description": "Podman & Podman Compose setup",
+  "required": false,
+  "depends_on": []
+}
