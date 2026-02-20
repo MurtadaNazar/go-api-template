@@ -1,146 +1,89 @@
-.PHONY: build test clean run deps verify update-deps dev dev-down help
+.PHONY: help build run test lint clean install-deps release version
 
-# Build variables
-BINARY_NAME=go-platform-template
-MAIN_FILE=cmd/server/main.go
+# Variables
+BINARY_NAME=go-platform
 VERSION=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME=$(shell date -u '+%Y-%m-%d_%H:%M:%S')
+GO_FLAGS=-ldflags "-X main.Version=$(VERSION) -X main.BuildTime=$(BUILD_TIME)"
 
-# Go commands
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOTEST=$(GOCMD) test
-GOMOD=$(GOCMD) mod
-GORUN=$(GOCMD) run
+help: ## Display this help screen
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-# Docker compose file
-DC_FILE=docker-compose/docker-compose.yml
+install-deps: ## Install development dependencies
+	go mod download
+	go mod verify
+	@command -v golangci-lint >/dev/null 2>&1 || go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
-# Build flags
-LDFLAGS=-ldflags "-X main.Version=${VERSION} -X main.BuildTime=${BUILD_TIME}"
+build: ## Build the binary
+	@echo "Building $(BINARY_NAME) v$(VERSION)..."
+	CGO_ENABLED=0 go build $(GO_FLAGS) -o $(BINARY_NAME)
+	@echo "✓ Binary created: ./$(BINARY_NAME)"
 
-# Build the application
-build:
-	@echo "Building $(BINARY_NAME)..."
-	CGO_ENABLED=0 $(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) $(MAIN_FILE)
-	@echo "✓ Build successful: ./$(BINARY_NAME)"
+run: build ## Build and run the application
+	./$(BINARY_NAME)
 
-# Run tests
-test:
-	@echo "Running tests..."
-	$(GOTEST) -v -race ./...
+dev: ## Run in development mode (with hot reload)
+	@command -v air >/dev/null 2>&1 || go install github.com/cosmtrek/air@latest
+	air
 
-# Run tests with coverage
-test-coverage:
-	@echo "Running tests with coverage..."
-	$(GOTEST) -v -coverprofile=coverage.out ./...
-	$(GOCMD) tool cover -html=coverage.out -o coverage.html
-	@echo "✓ Coverage report: coverage.html"
+test: ## Run tests with coverage
+	go test -v -race -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
 
-# Clean build artifacts
-clean:
-	@echo "Cleaning..."
+test-quick: ## Run tests without coverage
+	go test -v -race ./...
+
+lint: ## Run linter
+	@command -v golangci-lint >/dev/null 2>&1 || (echo "Installing golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+	golangci-lint run --timeout=5m
+
+fmt: ## Format code
+	go fmt ./...
+	go mod tidy
+
+clean: ## Clean build artifacts
 	rm -f $(BINARY_NAME)
 	rm -f coverage.out coverage.html
-	@echo "✓ Clean complete"
+	go clean -cache -testcache
 
-# Run the application
-run:
-	@echo "Running $(BINARY_NAME)..."
-	$(GORUN) $(MAIN_FILE)
+# Release targets (requires git tags)
+release-patch: ## Create patch release (e.g., v1.0.0 -> v1.0.1)
+	@bash scripts/release.sh patch
 
-# Download dependencies
-deps:
-	@echo "Downloading dependencies..."
-	$(GOMOD) download
-	@echo "✓ Dependencies downloaded"
+release-minor: ## Create minor release (e.g., v1.0.0 -> v1.1.0)
+	@bash scripts/release.sh minor
 
-# Verify dependencies
-verify:
-	@echo "Verifying dependencies..."
-	$(GOMOD) verify
-	@echo "✓ Dependencies verified"
+release-major: ## Create major release (e.g., v1.0.0 -> v2.0.0)
+	@bash scripts/release.sh major
 
-# Update dependencies
-update-deps:
-	@echo "Updating dependencies..."
-	$(GOMOD) tidy
-	@echo "✓ Dependencies updated"
+version: ## Show current version
+	@echo "Version: $(VERSION)"
+	@echo "Build Time: $(BUILD_TIME)"
+	@echo "Binary: $(BINARY_NAME)"
 
-# Start development environment with Docker
-dev:
-	@echo "Starting development environment..."
-	docker compose -f $(DC_FILE) up --build
+# Cross-platform builds
+build-linux-amd64: ## Build for Linux amd64
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GO_FLAGS) -o $(BINARY_NAME)-linux-amd64
 
-# Start development environment in background
-dev-d:
-	@echo "Starting development environment in background..."
-	docker compose -f $(DC_FILE) up -d --build
-	@echo "✓ Development environment started"
+build-linux-arm64: ## Build for Linux arm64
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(GO_FLAGS) -o $(BINARY_NAME)-linux-arm64
 
-# Stop development environment
-dev-down:
-	@echo "Stopping development environment..."
-	docker compose -f $(DC_FILE) down
-	@echo "✓ Development environment stopped"
+build-darwin-amd64: ## Build for macOS amd64
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(GO_FLAGS) -o $(BINARY_NAME)-darwin-amd64
 
-# View logs
-dev-logs:
-	docker compose -f $(DC_FILE) logs -f
+build-darwin-arm64: ## Build for macOS arm64 (Apple Silicon)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_FLAGS) -o $(BINARY_NAME)-darwin-arm64
 
-# Lint code (requires golangci-lint)
-lint:
-	@echo "Running linter..."
-	golangci-lint run ./...
+build-windows-amd64: ## Build for Windows amd64
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build $(GO_FLAGS) -o $(BINARY_NAME)-windows-amd64.exe
 
-# Security check (requires gosec)
-security:
-	@echo "Running security checks..."
-	gosec -exclude-generated ./...
+build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64 ## Build for all platforms
+	@echo "✓ All binaries built"
+	@ls -lh $(BINARY_NAME)-*
 
-# Format code
-fmt:
-	@echo "Formatting code..."
-	$(GOCMD) fmt ./...
-	@echo "✓ Code formatted"
-
-# Run vet
-vet:
-	@echo "Running go vet..."
-	$(GOCMD) vet ./...
-	@echo "✓ Go vet passed"
-
-# Help command
-help:
-	@echo "Usage: make [target]"
-	@echo ""
-	@echo "Build targets:"
-	@echo "  build          - Build the application"
-	@echo "  run            - Run the application locally"
-	@echo "  clean          - Clean build artifacts"
-	@echo ""
-	@echo "Testing targets:"
-	@echo "  test           - Run all tests"
-	@echo "  test-coverage  - Run tests with coverage report"
-	@echo ""
-	@echo "Dependency targets:"
-	@echo "  deps           - Download dependencies"
-	@echo "  verify         - Verify dependencies"
-	@echo "  update-deps    - Update dependencies (tidy)"
-	@echo ""
-	@echo "Development targets:"
-	@echo "  dev            - Start development environment (foreground)"
-	@echo "  dev-d          - Start development environment (background)"
-	@echo "  dev-down       - Stop development environment"
-	@echo "  dev-logs       - View development environment logs"
-	@echo ""
-	@echo "Code quality targets:"
-	@echo "  fmt            - Format code"
-	@echo "  vet            - Run go vet"
-	@echo "  lint           - Run linter (requires golangci-lint)"
-	@echo "  security       - Run security checks (requires gosec)"
-	@echo ""
-	@echo "Other:"
-	@echo "  help           - Show this help message"
+# Code quality
+check: fmt lint test ## Run all checks (format, lint, test)
+	@echo "✓ All checks passed"
 
 .DEFAULT_GOAL := help

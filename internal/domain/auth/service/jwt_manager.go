@@ -3,9 +3,9 @@ package service
 import (
 	"time"
 
-	apperrors "go_platform_template/internal/shared/errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	apperrors "go_platform_template/internal/shared/errors"
 )
 
 type JWTManager struct {

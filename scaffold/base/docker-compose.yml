@@ -1,0 +1,77 @@
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
+    environment:
+      - SERVER_PORT=${SERVER_PORT:-8080}
+      - SERVER_ENV=${SERVER_ENV:-development}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME:-{{.ProjectName}}}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRY=${JWT_EXPIRY:-15m}
+      - JWT_REFRESH_EXPIRY=${JWT_REFRESH_EXPIRY:-7d}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET=${MINIO_BUCKET:-uploads}
+      - MINIO_SECURE=false
+    depends_on:
+      - postgres
+      - minio
+    volumes:
+      - .:/app
+    networks:
+      - app_network
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-{{.ProjectName}}}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: minio server /minio_data --console-address ":9001"
+    volumes:
+      - minio_data:/minio_data
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  app_network:
+    driver: bridge

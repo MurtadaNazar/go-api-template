@@ -1,0 +1,80 @@
+version: 2
+
+project_name: go-platform
+
+before:
+  hooks:
+    - go mod download
+    - go mod verify
+
+builds:
+  - id: go-platform
+    main: .
+    binary: go-platform
+    
+    goos:
+      - linux
+      - darwin
+      - windows
+    
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    
+    goarm:
+      - "7"
+    
+    env:
+      - CGO_ENABLED=0
+    
+    ldflags:
+      - -X main.Version={{.Version}}
+      - -X main.BuildTime={{.Date}}
+      - -X main.Commit={{.Commit}}
+
+archives:
+  - format: binary
+    name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if eq .Os \"windows\" }}.exe{{ end }}"
+
+checksum:
+  name_template: "CHECKSUMS"
+  algorithm: sha256
+  format: "{{ .Hash }} *{{ .Name }}"
+
+snapshot:
+  name_template: "{{ .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^chore"
+      - "^test"
+      - "^doc"
+
+release:
+  draft: false
+  prerelease: auto
+  name_template: "Release {{.Tag}}"
+  footer: |
+    **Installation:**
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/murtadanazar/go-api-template/main/install.sh | bash
+    ```
+    
+    **Verify checksums:**
+    ```bash
+    sha256sum -c CHECKSUMS
+    ```
+
+brew:
+  - tap:
+      owner: murtadanazar
+      name: homebrew-tap
+    folder: Formula
+    homepage: https://github.com/murtadanazar/go-api-template
+    description: "Production-ready Go API scaffolder with interactive TUI"
+    license: MIT
+    test: |
+      system "#{bin}/go-platform --version"

@@ -1,0 +1,20 @@
+{
+  "id": "docker",
+  "name": "Docker",
+  "description": "Docker & Docker Compose setup",
+  "required": false,
+  "depends_on": [],
+  "directories": [
+    "docker-compose"
+  ],
+  "files": [
+    "Dockerfile",
+    ".dockerignore"
+  ],
+  "directories_to_copy": [
+    "docker-compose"
+  ],
+  "config_updates": {
+    "go.mod": []
+  }
+}

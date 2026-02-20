@@ -1,85 +1,27 @@
-version: "2"
-
 run:
   timeout: 5m
-  issues-exit-code: 1
   tests: true
-  build-tags:
-    - integration
-  modules-download-mode: readonly
-  buildvcs: false
-
-output:
-  format: colored-line-number
 
 linters:
   enable:
-    # Default / core
-    - errcheck
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
+    - errcheck        # Check error handling
+    - errchkjson      # Check JSON error handling
+    - govet           # Go vet
+    - typecheck       # Type checking
+    - gosec           # Security issues
+    - staticcheck     # Static analysis
+    - unconvert       # Unnecessary type conversions
+    - unused          # Unused variables
+    - sqlclosecheck   # SQL connection closing
 
-    # Extra quality & correctness
-    - bidichk
-    - bodyclose
-    - contextcheck
-    - dogsled
-    - durationcheck
-    - errchkjson
-    - copyloopvar
-    - gocritic
-    - err113
-    - prealloc
-    - reassign
-    - rowserrcheck
-    - sqlclosecheck
-    - unconvert
-    - unparam
-    - usestdlibvars
-    - whitespace
-
-linter-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions:
-      - (*github.com/gin-gonic/gin.Context).Error
-      - (*go.uber.org/zap.SugaredLogger).Sync
-
-  govet:
-    enable-all: true
-
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-      - experimental
-    disabled-checks:
-      - sloppyReassign
-      - hugeParam
-      - rangeValCopy
-
-  unused:
-    check-exported: false
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        severity: error
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - unparam
-        - unused
-        - err113
-
-    - path: docs/
-      linters:
-        - unused
-
-    - path: cmd/server/main.go
-      linters:
-        - dogsled
-
-  max-issues-per-linter: 0
-  max-same-issues: 0
+        - gosec

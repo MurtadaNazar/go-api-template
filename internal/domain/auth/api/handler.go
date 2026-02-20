@@ -4,9 +4,9 @@ import (
 	"go_platform_template/internal/domain/auth/dto"
 	"go_platform_template/internal/domain/auth/model"
 	"go_platform_template/internal/domain/auth/service"
+	"go_platform_template/internal/platform/validation"
 	apperrors "go_platform_template/internal/shared/errors"
 	"go_platform_template/internal/shared/response"
-	"go_platform_template/internal/platform/validation"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

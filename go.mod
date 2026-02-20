@@ -1,8 +1,11 @@
 module go_platform_template
 
-go 1.25.1
+go 1.24.0
 
 require (
+	github.com/charmbracelet/bubbles v0.20.0
+	github.com/charmbracelet/bubbletea v1.1.0
+	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
@@ -12,7 +15,19 @@ require (
 )
 
 require (
+	github.com/atotto/clipboard v0.1.4 // indirect
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/charmbracelet/x/ansi v0.2.3 // indirect
+	github.com/charmbracelet/x/term v0.2.0 // indirect
+	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-localereader v0.0.1 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
+	github.com/muesli/cancelreader v0.2.2 // indirect
+	github.com/muesli/termenv v0.15.2 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/time v0.14.0 // indirect
 )
 
@@ -38,7 +53,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
-	github.com/swaggo/swag v1.16.6 // direct
+	github.com/swaggo/swag v1.16.6 // indirect; direct
 	github.com/tinylib/msgp v1.6.1 // indirect
 )
 

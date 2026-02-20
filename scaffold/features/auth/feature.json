@@ -1,0 +1,29 @@
+{
+  "id": "auth",
+  "name": "Authentication (JWT)",
+  "description": "JWT-based auth with token rotation",
+  "required": false,
+  "depends_on": [],
+  "directories": [
+    "internal/domain/auth"
+  ],
+  "directories_to_copy": [
+    "internal/domain/auth"
+  ],
+  "files": [
+    "internal/domain/auth/api/handler.go",
+    "internal/domain/auth/dto/dto.go",
+    "internal/domain/auth/model/auth.go",
+    "internal/domain/auth/repo/token_repo.go",
+    "internal/domain/auth/service/auth_service.go",
+    "internal/domain/auth/service/auth_service_test.go",
+    "internal/domain/auth/service/cleanup.go",
+    "internal/domain/auth/service/jwt_manager.go",
+    "internal/domain/auth/service/token_store.go"
+  ],
+  "config_updates": {
+    "go.mod": [
+      "github.com/golang-jwt/jwt/v5"
+    ]
+  }
+}
