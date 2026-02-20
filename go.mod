@@ -1,6 +1,6 @@
 module go_platform_template
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/charmbracelet/bubbles v0.20.0
