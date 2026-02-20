@@ -1,9 +1,7 @@
 package scaffold
 
 import (
-	"bytes"
 	"encoding/json"
-	"embed"
 	"fmt"
 	"io/fs"
 	"os"
@@ -15,12 +13,17 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-//go:embed ../../scaffold
-var scaffoldFS embed.FS
-
 type ProcessCompleteMsg struct {
 	Message string
 	Err     error
+}
+
+// scaffoldFS will be set by init in main package
+var scaffoldFS fs.FS
+
+// SetScaffoldFS allows the main package to inject the embedded scaffold FS
+func SetScaffoldFS(fs fs.FS) {
+	scaffoldFS = fs
 }
 
 func (m *Model) processScaffold() tea.Cmd {
