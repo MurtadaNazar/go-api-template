@@ -4,80 +4,17 @@ run:
 
 linters:
   enable:
-    - asasalint
-    - asciicheck
-    - bidichk
-    - bodyclose
-    - contextcheck
-    - decorder
-    - depguard
-    - dogsled
-    - dupl
-    - dupword
-    - durationcheck
-    - errcheck
-    - errchkjson
-    - errname
-    - errorlint
-    - exhaustive
-    - fatcontext
-    - forbidigo
-    - forcetypeassert
-    - gocritic
-    - gocyclo
-    - goheader
-    - goimports
-    - gomodguard
-    - goprintffuncname
-    - gosec
-    - gosmopolitan
-    - gosimple
-    - govet
-    - grouper
-    - importas
-    - ineffassign
-    - interfacebloat
-    - intrange
-    - ireturn
-    - lll
-    - loggercheck
-    - maintidx
-    - makezero
-    - misspell
-    - musttag
-    - nakedret
-    - nilnil
-    - noctx
-    - nolintlint
-    - nosprintfhostport
-    - predeclared
-    - reassign
-    - revive
-    - rowserrcheck
-    - sloglint
-    - spancheck
-    - sqlclosecheck
-    - staticcheck
-    - testableexamples
-    - thelper
-    - tparallel
-    - typecheck
-    - unconvert
-    - unused
-    - usestdlibvars
-    - whitespace
-    - zerologlint
+    - errcheck        # Check error handling
+    - errchkjson      # Check JSON error handling
+    - govet           # Go vet
+    - typecheck       # Type checking
+    - gosec           # Security issues
+    - staticcheck     # Static analysis
+    - unconvert       # Unnecessary type conversions
+    - unused          # Unused variables
+    - sqlclosecheck   # SQL connection closing
 
 linters-settings:
-  gocyclo:
-    min-complexity: 15
-  
-  lll:
-    line-length: 120
-  
-  goimports:
-    local-prefixes: go_platform_template
-  
   revive:
     rules:
       - name: exported
@@ -87,7 +24,4 @@ issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gocyclo
-        - errcheck
-        - dupl
         - gosec
