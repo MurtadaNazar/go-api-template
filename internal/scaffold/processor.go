@@ -229,103 +229,7 @@ func copyDirFromEmbed(srcPath, dstPath string) error {
 	})
 }
 
-func copyBaseScaffold(templateDir, projectDir string) error {
-	// Copy base files from scaffold/base/
-	baseDir := filepath.Join(templateDir, "scaffold", "base")
 
-	// Check if base directory exists
-	if _, err := os.Stat(baseDir); err != nil {
-		return fmt.Errorf("scaffold/base directory not found: %w", err)
-	}
-
-	// Copy entire base directory structure to project
-	if err := copyDir(baseDir, projectDir); err != nil {
-		return fmt.Errorf("failed to copy scaffold base: %w", err)
-	}
-
-	return nil
-}
-
-func copySelectedFeatures(templateDir, projectDir string, selectedFeatures map[string]bool) error {
-	scaffoldDir := filepath.Join(templateDir, "scaffold", "features")
-
-	// Feature ID to name mapping
-	featureMap := map[string]string{
-		"Authentication (JWT)": "auth",
-		"User Management":      "user-management",
-		"Database":             "database",
-		"File Storage":         "file-storage",
-		"API Docs":             "api-docs",
-		"Docker":               "docker",
-	}
-
-	for featureName, isSelected := range selectedFeatures {
-		if !isSelected {
-			continue
-		}
-
-		featureID, ok := featureMap[featureName]
-		if !ok {
-			continue
-		}
-
-		featureDir := filepath.Join(scaffoldDir, featureID)
-		featureFile := filepath.Join(featureDir, "feature.json")
-
-		// Check if feature definition exists
-		if _, err := os.Stat(featureFile); err != nil {
-			// Feature not yet set up, copy from template
-			continue
-		}
-
-		// Read feature definition
-		content, err := os.ReadFile(featureFile)
-		if err != nil {
-			continue
-		}
-
-		var feature struct {
-			Directories       []string `json:"directories"`
-			Files             []string `json:"files"`
-			DirectoriesToCopy []string `json:"directories_to_copy"`
-		}
-
-		if err := parseJSON(content, &feature); err != nil {
-			continue
-		}
-
-		// Copy directories for this feature
-		for _, dir := range feature.DirectoriesToCopy {
-			srcPath := filepath.Join(templateDir, dir)
-			dstPath := filepath.Join(projectDir, dir)
-
-			if _, err := os.Stat(srcPath); err == nil {
-				if err := copyDir(srcPath, dstPath); err != nil {
-					// Log but continue
-					continue
-				}
-			}
-		}
-
-		// Copy files for this feature
-		for _, file := range feature.Files {
-			srcPath := filepath.Join(templateDir, file)
-			dstPath := filepath.Join(projectDir, file)
-
-			if _, err := os.Stat(srcPath); err == nil {
-				if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
-					continue
-				}
-				if err := copyFile(srcPath, dstPath); err != nil {
-					// Log but continue
-					continue
-				}
-			}
-		}
-	}
-
-	return nil
-}
 
 func parseJSON(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
@@ -601,45 +505,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, log *zap.Sug
 	}
 
 	return nil
-}
-
-func copyFile(src, dst string) error {
-	// Create directory if it doesn't exist
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
-	}
-
-	content, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(dst, content, 0600)
-}
-
-func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-
-		dstPath := filepath.Join(dst, relPath)
-
-		if info.IsDir() {
-			return os.MkdirAll(dstPath, info.Mode())
-		}
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		return os.WriteFile(dstPath, content, info.Mode())
-	})
 }
 
 func replaceModuleNames(projectDir, projectName, moduleName string) error {
