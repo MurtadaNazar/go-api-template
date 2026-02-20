@@ -49,9 +49,7 @@ linters:
     - nilnil
     - noctx
     - nolintlint
-    - nonamedreturns
     - nosprintfhostport
-    - prealloc
     - predeclared
     - reassign
     - revive
@@ -60,17 +58,13 @@ linters:
     - spancheck
     - sqlclosecheck
     - staticcheck
-    - stylecheck
-    - tagliatelle
     - testableexamples
     - thelper
     - tparallel
     - typecheck
     - unconvert
-    - unparam
     - unused
     - usestdlibvars
-    - wastedassign
     - whitespace
     - zerologlint
 
