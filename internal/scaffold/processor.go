@@ -3,6 +3,7 @@ package scaffold
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +16,14 @@ import (
 type ProcessCompleteMsg struct {
 	Message string
 	Err     error
+}
+
+// scaffoldFS will be set by init in main package
+var scaffoldFS fs.FS
+
+// SetScaffoldFS allows the main package to inject the embedded scaffold FS
+func SetScaffoldFS(fs fs.FS) {
+	scaffoldFS = fs
 }
 
 func (m *Model) processScaffold() tea.Cmd {
@@ -34,26 +43,6 @@ func (m *Model) processScaffold() tea.Cmd {
 }
 
 func createProject(projectName, moduleName, projectPath string, selectedFeatures map[string]bool) error {
-	// Get template directory
-	templateDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
-	}
-
-	// Find template directory (go up until we find go.mod with go_platform_template)
-	for {
-		if content, err := os.ReadFile(filepath.Join(templateDir, "go.mod")); err == nil {
-			if strings.Contains(string(content), "go_platform_template") {
-				break
-			}
-		}
-		parent := filepath.Dir(templateDir)
-		if parent == templateDir {
-			return fmt.Errorf("template directory not found")
-		}
-		templateDir = parent
-	}
-
 	// Resolve project path
 	var basePath string
 	if projectPath == "." {
@@ -78,14 +67,14 @@ func createProject(projectName, moduleName, projectPath string, selectedFeatures
 		return fmt.Errorf("failed to create project directory: %w", err)
 	}
 
-	// Copy base files first
-	if err := copyBaseScaffold(templateDir, projectDir); err != nil {
+	// Copy base files first (from embedded FS)
+	if err := copyBaseScaffoldFromEmbed(projectDir); err != nil {
 		os.RemoveAll(projectDir)
 		return fmt.Errorf("failed to copy base files: %w", err)
 	}
 
-	// Copy selected features
-	if err := copySelectedFeatures(templateDir, projectDir, selectedFeatures); err != nil {
+	// Copy selected features (from embedded FS)
+	if err := copySelectedFeaturesFromEmbed(projectDir, selectedFeatures); err != nil {
 		os.RemoveAll(projectDir)
 		return fmt.Errorf("failed to copy features: %w", err)
 	}
@@ -117,25 +106,15 @@ func createProject(projectName, moduleName, projectPath string, selectedFeatures
 	return nil
 }
 
-func copyBaseScaffold(templateDir, projectDir string) error {
-	// Copy base files from scaffold/base/
-	baseDir := filepath.Join(templateDir, "scaffold", "base")
+func copyBaseScaffoldFromEmbed(projectDir string) error {
+	// Copy base files from embedded FS (scaffold/base/)
+	baseDir := "scaffold/base"
 
-	// Check if base directory exists
-	if _, err := os.Stat(baseDir); err != nil {
-		return fmt.Errorf("scaffold/base directory not found: %w", err)
-	}
-
-	// Copy entire base directory structure to project
-	if err := copyDir(baseDir, projectDir); err != nil {
-		return fmt.Errorf("failed to copy scaffold base: %w", err)
-	}
-
-	return nil
+	return copyDirFromEmbed(baseDir, projectDir)
 }
 
-func copySelectedFeatures(templateDir, projectDir string, selectedFeatures map[string]bool) error {
-	scaffoldDir := filepath.Join(templateDir, "scaffold", "features")
+func copySelectedFeaturesFromEmbed(projectDir string, selectedFeatures map[string]bool) error {
+	scaffoldDir := "scaffold/features"
 
 	// Feature ID to name mapping
 	featureMap := map[string]string{
@@ -158,17 +137,12 @@ func copySelectedFeatures(templateDir, projectDir string, selectedFeatures map[s
 		}
 
 		featureDir := filepath.Join(scaffoldDir, featureID)
+
+		// Read feature definition from embedded FS
 		featureFile := filepath.Join(featureDir, "feature.json")
-
-		// Check if feature definition exists
-		if _, err := os.Stat(featureFile); err != nil {
-			// Feature not yet set up, copy from template
-			continue
-		}
-
-		// Read feature definition
-		content, err := os.ReadFile(featureFile)
+		content, err := fs.ReadFile(scaffoldFS, featureFile)
 		if err != nil {
+			// Feature not set up, skip
 			continue
 		}
 
@@ -184,12 +158,11 @@ func copySelectedFeatures(templateDir, projectDir string, selectedFeatures map[s
 
 		// Copy directories for this feature
 		for _, dir := range feature.DirectoriesToCopy {
-			srcPath := filepath.Join(templateDir, dir)
+			srcPath := filepath.Join("scaffold", dir)
 			dstPath := filepath.Join(projectDir, dir)
 
-			if _, err := os.Stat(srcPath); err == nil {
-				if err := copyDir(srcPath, dstPath); err != nil {
-					// Log but continue
+			if _, err := fs.Stat(scaffoldFS, srcPath); err == nil {
+				if err := copyDirFromEmbed(srcPath, dstPath); err != nil {
 					continue
 				}
 			}
@@ -197,15 +170,18 @@ func copySelectedFeatures(templateDir, projectDir string, selectedFeatures map[s
 
 		// Copy files for this feature
 		for _, file := range feature.Files {
-			srcPath := filepath.Join(templateDir, file)
+			srcPath := filepath.Join("scaffold", file)
 			dstPath := filepath.Join(projectDir, file)
 
-			if _, err := os.Stat(srcPath); err == nil {
+			if _, err := fs.Stat(scaffoldFS, srcPath); err == nil {
 				if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
 					continue
 				}
-				if err := copyFile(srcPath, dstPath); err != nil {
-					// Log but continue
+				content, err := fs.ReadFile(scaffoldFS, srcPath)
+				if err != nil {
+					continue
+				}
+				if err := os.WriteFile(dstPath, content, 0600); err != nil {
 					continue
 				}
 			}
@@ -214,6 +190,46 @@ func copySelectedFeatures(templateDir, projectDir string, selectedFeatures map[s
 
 	return nil
 }
+
+func copyDirFromEmbed(srcPath, dstPath string) error {
+	return fs.WalkDir(scaffoldFS, srcPath, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Calculate relative path from source
+		relPath, err := filepath.Rel(srcPath, path)
+		if err != nil {
+			return err
+		}
+
+		// Skip the source directory itself
+		if relPath == "." {
+			return nil
+		}
+
+		targetPath := filepath.Join(dstPath, relPath)
+
+		if entry.IsDir() {
+			return os.MkdirAll(targetPath, 0755)
+		}
+
+		// Create parent directory
+		if err := os.MkdirAll(filepath.Dir(targetPath), 0755); err != nil {
+			return err
+		}
+
+		// Read and write file
+		content, err := fs.ReadFile(scaffoldFS, path)
+		if err != nil {
+			return err
+		}
+
+		return os.WriteFile(targetPath, content, 0600)
+	})
+}
+
+
 
 func parseJSON(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
@@ -489,45 +505,6 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, log *zap.Sug
 	}
 
 	return nil
-}
-
-func copyFile(src, dst string) error {
-	// Create directory if it doesn't exist
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
-	}
-
-	content, err := os.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(dst, content, 0600)
-}
-
-func copyDir(src, dst string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-
-		dstPath := filepath.Join(dst, relPath)
-
-		if info.IsDir() {
-			return os.MkdirAll(dstPath, info.Mode())
-		}
-
-		content, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
-		return os.WriteFile(dstPath, content, info.Mode())
-	})
 }
 
 func replaceModuleNames(projectDir, projectName, moduleName string) error {
