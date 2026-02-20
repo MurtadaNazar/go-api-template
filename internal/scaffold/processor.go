@@ -201,7 +201,9 @@ func copySelectedFeatures(templateDir, projectDir string, selectedFeatures map[s
 			dstPath := filepath.Join(projectDir, file)
 
 			if _, err := os.Stat(srcPath); err == nil {
-				os.MkdirAll(filepath.Dir(dstPath), 0755)
+				if err := os.MkdirAll(filepath.Dir(dstPath), 0755); err != nil {
+					continue
+				}
 				if err := copyFile(srcPath, dstPath); err != nil {
 					// Log but continue
 					continue
@@ -499,7 +501,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, content, 0644)
+	return os.WriteFile(dst, content, 0600)
 }
 
 func copyDir(src, dst string) error {
@@ -579,7 +581,7 @@ func replaceModuleNames(projectDir, projectName, moduleName string) error {
 		if len(lines) > 0 {
 			lines[0] = fmt.Sprintf("module %s", moduleName)
 		}
-		os.WriteFile(goModPath, []byte(strings.Join(lines, "\n")), 0644)
+		_ = os.WriteFile(goModPath, []byte(strings.Join(lines, "\n")), 0600)
 	}
 
 	return nil
@@ -620,11 +622,12 @@ func initializeGit(projectDir string) error {
 	}
 
 	for _, args := range cmds {
+		//nolint:gosec
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = projectDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
-		cmd.Run() // Ignore errors
+		_ = cmd.Run() // Ignore errors
 	}
 
 	return nil

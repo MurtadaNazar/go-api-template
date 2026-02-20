@@ -100,7 +100,7 @@ func NewModel() *Model {
 	inputs[0].PromptStyle = styles.Focused
 	inputs[0].TextStyle = styles.Focused
 	inputs[0].PlaceholderStyle = styles.Blurred
-	inputs[0].CursorStyle = styles.Focused
+	inputs[0].Cursor.Style = styles.Focused
 	inputs[0].Focus()
 	inputs[0].Width = CONTAINER_WIDTH - 6
 
@@ -111,7 +111,7 @@ func NewModel() *Model {
 	inputs[1].PromptStyle = styles.Blurred
 	inputs[1].TextStyle = styles.Blurred
 	inputs[1].PlaceholderStyle = styles.Blurred
-	inputs[1].CursorStyle = styles.Blurred
+	inputs[1].Cursor.Style = styles.Blurred
 	inputs[1].Width = CONTAINER_WIDTH - 6
 
 	// Project path input
@@ -121,7 +121,7 @@ func NewModel() *Model {
 	inputs[2].PromptStyle = styles.Blurred
 	inputs[2].TextStyle = styles.Blurred
 	inputs[2].PlaceholderStyle = styles.Blurred
-	inputs[2].CursorStyle = styles.Blurred
+	inputs[2].Cursor.Style = styles.Blurred
 	inputs[2].Width = CONTAINER_WIDTH - 6
 
 	s := spinner.New()
@@ -450,12 +450,12 @@ func (m *Model) updateInputFocus() {
 		if i == m.focusIndex {
 			m.inputs[i].PromptStyle = m.styles.Focused
 			m.inputs[i].TextStyle = m.styles.Focused
-			m.inputs[i].CursorStyle = m.styles.Focused
+			m.inputs[i].Cursor.Style = m.styles.Focused
 			m.inputs[i].PlaceholderStyle = m.styles.Blurred
 		} else {
 			m.inputs[i].PromptStyle = m.styles.Blurred
 			m.inputs[i].TextStyle = m.styles.Blurred
-			m.inputs[i].CursorStyle = m.styles.Blurred
+			m.inputs[i].Cursor.Style = m.styles.Blurred
 			m.inputs[i].PlaceholderStyle = m.styles.Blurred
 			m.inputs[i].Blur()
 		}
@@ -766,7 +766,7 @@ func (m *Model) viewFeatures() string {
 
 	featuresList := ""
 	for i, feat := range m.features {
-		checkbox := "[ ] "
+		var checkbox string
 		if feat.Selected {
 			checkbox = m.styles.Success.Render("[✓]")
 		} else {
