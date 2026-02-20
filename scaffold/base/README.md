@@ -176,16 +176,16 @@ Swagger documentation is auto-generated from code comments.
 make build
 ```
 
-### Build Docker Image
+### Build Container Image
 
 ```bash
-docker build -t {{.ProjectName}}:latest .
+{{.ContainerCmd}} build -t {{.ProjectName}}:latest .
 ```
 
 ### Run Container
 
 ```bash
-docker run -p 8080:8080 {{.ProjectName}}:latest
+{{.ContainerCmd}} run -p 8080:8080 {{.ProjectName}}:latest
 ```
 
 ## Database Migrations

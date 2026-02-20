@@ -42,6 +42,7 @@ The TUI creates production-ready Go API projects with:
 - ✅ **File Storage** - MinIO S3-compatible
 - ✅ **API Docs** - Auto-generated Swagger
 - ✅ **Docker** - Docker & Docker Compose
+- ✅ **Podman** - Podman & Podman Compose
 - ✅ **Logging** - Structured logging (Zap)
 - ✅ **Project Structure** - Clean architecture
 

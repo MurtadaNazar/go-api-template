@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"go_platform_template/internal/scaffold"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func init() {
-	// Inject embedded scaffold FS into scaffold package
 	scaffold.SetScaffoldFS(ScaffoldFS)
 }
 

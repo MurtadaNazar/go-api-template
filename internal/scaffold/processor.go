@@ -33,7 +33,7 @@ func (m *Model) processScaffold() tea.Cmd {
 			selectedFeatures[feat.Name] = feat.Selected
 		}
 
-		if err := createProject(m.projectName, m.moduleName, m.projectPath, selectedFeatures); err != nil {
+		if err := createProject(m.projectName, m.moduleName, m.projectPath, selectedFeatures, m.envVars); err != nil {
 			return ProcessCompleteMsg{Err: err}
 		}
 		return ProcessCompleteMsg{
@@ -42,7 +42,14 @@ func (m *Model) processScaffold() tea.Cmd {
 	}
 }
 
-func createProject(projectName, moduleName, projectPath string, selectedFeatures map[string]bool) error {
+func CreateProjectDirect(projectName, moduleName, projectPath string, selectedFeatures map[string]bool, envVars map[string]string) error {
+	if scaffoldFS == nil {
+		return fmt.Errorf("scaffold filesystem not initialized - call SetScaffoldFS first")
+	}
+	return createProject(projectName, moduleName, projectPath, selectedFeatures, envVars)
+}
+
+func createProject(projectName, moduleName, projectPath string, selectedFeatures map[string]bool, envVars map[string]string) error {
 	// Resolve project path
 	var basePath string
 	if projectPath == "." {
@@ -97,6 +104,30 @@ func createProject(projectName, moduleName, projectPath string, selectedFeatures
 		return fmt.Errorf("failed to update module names: %w", err)
 	}
 
+	// Process Makefile with container choice
+	if err := processMakefile(projectDir, selectedFeatures); err != nil {
+		os.RemoveAll(projectDir)
+		return fmt.Errorf("failed to process Makefile: %w", err)
+	}
+
+	// Process README with container choice
+	if err := processReadme(projectDir, selectedFeatures); err != nil {
+		os.RemoveAll(projectDir)
+		return fmt.Errorf("failed to process README: %w", err)
+	}
+
+	// Clean up container files based on selection
+	if err := cleanupContainerFiles(projectDir, selectedFeatures); err != nil {
+		os.RemoveAll(projectDir)
+		return fmt.Errorf("failed to cleanup container files: %w", err)
+	}
+
+	// Process .env file with user-provided values
+	if err := processEnvFile(projectDir, projectName, envVars); err != nil {
+		os.RemoveAll(projectDir)
+		return fmt.Errorf("failed to process .env file: %w", err)
+	}
+
 	// Initialize git
 	if err := initializeGit(projectDir); err != nil {
 		os.RemoveAll(projectDir)
@@ -108,6 +139,10 @@ func createProject(projectName, moduleName, projectPath string, selectedFeatures
 
 func copyBaseScaffoldFromEmbed(projectDir string) error {
 	// Copy base files from embedded FS (scaffold/base/)
+	if scaffoldFS == nil {
+		return fmt.Errorf("scaffold filesystem not initialized")
+	}
+
 	baseDir := "scaffold/base"
 
 	return copyDirFromEmbed(baseDir, projectDir)
@@ -124,6 +159,7 @@ func copySelectedFeaturesFromEmbed(projectDir string, selectedFeatures map[strin
 		"File Storage":         "file-storage",
 		"API Docs":             "api-docs",
 		"Docker":               "docker",
+		"Podman":               "podman",
 	}
 
 	for featureName, isSelected := range selectedFeatures {
@@ -158,19 +194,20 @@ func copySelectedFeaturesFromEmbed(projectDir string, selectedFeatures map[strin
 
 		// Copy directories for this feature
 		for _, dir := range feature.DirectoriesToCopy {
-			srcPath := filepath.Join("scaffold", dir)
+			srcPath := filepath.Join(featureDir, dir)
 			dstPath := filepath.Join(projectDir, dir)
 
-			if _, err := fs.Stat(scaffoldFS, srcPath); err == nil {
-				if err := copyDirFromEmbed(srcPath, dstPath); err != nil {
-					continue
-				}
+			if _, err := fs.Stat(scaffoldFS, srcPath); err != nil {
+				continue
+			}
+			if err := copyDirFromEmbed(srcPath, dstPath); err != nil {
+				continue
 			}
 		}
 
 		// Copy files for this feature
 		for _, file := range feature.Files {
-			srcPath := filepath.Join("scaffold", file)
+			srcPath := filepath.Join(featureDir, file)
 			dstPath := filepath.Join(projectDir, file)
 
 			if _, err := fs.Stat(scaffoldFS, srcPath); err == nil {
@@ -192,6 +229,23 @@ func copySelectedFeaturesFromEmbed(projectDir string, selectedFeatures map[strin
 }
 
 func copyDirFromEmbed(srcPath, dstPath string) error {
+	if scaffoldFS == nil {
+		return fmt.Errorf("scaffold filesystem not initialized")
+	}
+
+	// Check if source exists
+	if _, err := fs.Stat(scaffoldFS, srcPath); err != nil {
+		// Debug: list available paths
+		var available []string
+		fs.WalkDir(scaffoldFS, ".", func(path string, entry fs.DirEntry, err error) error {
+			if err == nil && !entry.IsDir() {
+				available = append(available, path)
+			}
+			return nil
+		})
+		return fmt.Errorf("source path %q not found. available: %v, error: %w", srcPath, available, err)
+	}
+
 	return fs.WalkDir(scaffoldFS, srcPath, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -206,6 +260,11 @@ func copyDirFromEmbed(srcPath, dstPath string) error {
 		// Skip the source directory itself
 		if relPath == "." {
 			return nil
+		}
+
+		// Strip .tmpl extension (used to work around go:embed module boundary rules)
+		if strings.HasSuffix(relPath, ".tmpl") {
+			relPath = strings.TrimSuffix(relPath, ".tmpl")
 		}
 
 		targetPath := filepath.Join(dstPath, relPath)
@@ -228,8 +287,6 @@ func copyDirFromEmbed(srcPath, dstPath string) error {
 		return os.WriteFile(targetPath, content, 0600)
 	})
 }
-
-
 
 func parseJSON(data []byte, v interface{}) error {
 	return json.Unmarshal(data, v)
@@ -309,6 +366,7 @@ func main() {
 		HasFile     bool
 		HasDocs     bool
 		HasDocker   bool
+		HasPodman   bool
 	}{
 		Module:      moduleName,
 		HasAuth:     selectedFeatures["Authentication (JWT)"],
@@ -317,6 +375,7 @@ func main() {
 		HasFile:     selectedFeatures["File Storage"],
 		HasDocs:     selectedFeatures["API Docs"],
 		HasDocker:   selectedFeatures["Docker"],
+		HasPodman:   selectedFeatures["Podman"],
 	}
 
 	tmpl, err := template.New("main.go").Parse(mainGoTemplate)
@@ -472,6 +531,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, log *zap.Sug
 		HasFile     bool
 		HasDocs     bool
 		HasDocker   bool
+		HasPodman   bool
 	}{
 		Module:      moduleName,
 		HasAuth:     selectedFeatures["Authentication (JWT)"],
@@ -480,6 +540,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, log *zap.Sug
 		HasFile:     selectedFeatures["File Storage"],
 		HasDocs:     selectedFeatures["API Docs"],
 		HasDocker:   selectedFeatures["Docker"],
+		HasPodman:   selectedFeatures["Podman"],
 	}
 
 	tmpl, err := template.New("routes.go").Parse(routesGoTemplate)
@@ -510,6 +571,7 @@ func RegisterRoutes(r *gin.Engine, db *gorm.DB, cfg *config.Config, log *zap.Sug
 func replaceModuleNames(projectDir, projectName, moduleName string) error {
 	templateModule := "go_platform_template"
 	templateName := "go-platform-template"
+	templateProject := "{{.ProjectName}}"
 
 	// Walk through Go files
 	if err := filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
@@ -542,6 +604,7 @@ func replaceModuleNames(projectDir, projectName, moduleName string) error {
 			}
 
 			content = []byte(strings.ReplaceAll(string(content), templateName, projectName))
+			content = []byte(strings.ReplaceAll(string(content), templateProject, projectName))
 			return os.WriteFile(path, content, info.Mode())
 		}
 
@@ -565,8 +628,8 @@ func replaceModuleNames(projectDir, projectName, moduleName string) error {
 }
 
 func isConfigFile(path string) bool {
-	configExts := []string{".yaml", ".yml", ".json", ".toml"}
-	configNames := []string{"Makefile", "Dockerfile"}
+	configExts := []string{".yaml", ".yml", ".json", ".toml", ".example"}
+	configNames := []string{"Makefile", "Dockerfile", "Containerfile", ".env", ".env.example"}
 
 	for _, ext := range configExts {
 		if strings.HasSuffix(path, ext) {
@@ -582,6 +645,90 @@ func isConfigFile(path string) bool {
 	}
 
 	return false
+}
+
+func processMakefile(projectDir string, selectedFeatures map[string]bool) error {
+	makefilePath := filepath.Join(projectDir, "Makefile")
+	content, err := os.ReadFile(makefilePath)
+	if err != nil {
+		return err
+	}
+
+	containerCmd := "docker"
+	composeFile := "docker-compose.yml"
+	if selectedFeatures["Podman"] && !selectedFeatures["Docker"] {
+		containerCmd = "podman"
+		composeFile = "podman-compose.yml"
+	}
+
+	result := strings.ReplaceAll(string(content), "{{.ContainerCmd}}", containerCmd)
+	result = strings.ReplaceAll(result, "{{.ComposeFile}}", composeFile)
+
+	return os.WriteFile(makefilePath, []byte(result), 0600)
+}
+
+func processReadme(projectDir string, selectedFeatures map[string]bool) error {
+	readmePath := filepath.Join(projectDir, "README.md")
+	content, err := os.ReadFile(readmePath)
+	if err != nil {
+		return err
+	}
+
+	containerCmd := "docker"
+	if selectedFeatures["Podman"] && !selectedFeatures["Docker"] {
+		containerCmd = "podman"
+	}
+
+	result := strings.ReplaceAll(string(content), "{{.ContainerCmd}}", containerCmd)
+
+	return os.WriteFile(readmePath, []byte(result), 0600)
+}
+
+func cleanupContainerFiles(projectDir string, selectedFeatures map[string]bool) error {
+	hasDocker := selectedFeatures["Docker"]
+	hasPodman := selectedFeatures["Podman"]
+
+	if !hasDocker {
+		os.Remove(filepath.Join(projectDir, "Dockerfile"))
+		os.Remove(filepath.Join(projectDir, "docker-compose.yml"))
+		os.Remove(filepath.Join(projectDir, ".dockerignore"))
+	}
+
+	if !hasPodman {
+		os.Remove(filepath.Join(projectDir, "Containerfile"))
+		os.Remove(filepath.Join(projectDir, "podman-compose.yml"))
+	}
+
+	return nil
+}
+
+func processEnvFile(projectDir, projectName string, envVars map[string]string) error {
+	envExamplePath := filepath.Join(projectDir, ".env.example")
+	envPath := filepath.Join(projectDir, ".env")
+
+	content, err := os.ReadFile(envExamplePath)
+	if err != nil {
+		return err
+	}
+
+	result := string(content)
+	result = strings.ReplaceAll(result, "{{.ProjectName}}", projectName)
+
+	for key, value := range envVars {
+		lines := strings.Split(result, "\n")
+		for i, line := range lines {
+			if strings.HasPrefix(line, key+"=") {
+				lines[i] = key + "=" + value
+			}
+		}
+		result = strings.Join(lines, "\n")
+	}
+
+	if err := os.WriteFile(envPath, []byte(result), 0600); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func initializeGit(projectDir string) error {
